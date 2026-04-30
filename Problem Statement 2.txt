@@ -1,0 +1,135 @@
+Problem Statement 2 - Building a Unified Student Engagement Ecosystem for Education and Financing Choices
+
+1. Problem Statement
+Indian students aspiring to pursue Graduate/postgraduate education face a fragmented journey—ranging from university discovery, application processes, visa requirements (if abroad),financial planning, and ultimately education financing.
+
+Your challenge is to design and build an AI-first engagement platform that attracts,
+educates, and nurtures students planning higher studies (both international and domestic)— ultimately building awareness of financing options and application for education loans.
+
+The platform should:
+• Act as a student ecosystem (e.g. SoFi for students)
+• Use AI-led marketing, engagement, personalization, and automation
+• Drive awareness → engagement → trust → conversion
+
+2. Detailed Description
+Objective
+Create a prototype AI-powered platform (web/app/chatbot) that engages Indian
+students across their study-abroad journey and seamlessly integrates education loan
+discovery and application.
+Target User Persona
+• Second - Final-year undergraduates / young professionals (India-based)
+• Planning to pursue postgraduate programs (abroad like US, UK, Canada, Europe,
+etc.) or domestic institute
+ions
+• Early-stage (exploration) to mid-stage (applications in progress)
+
+Core Requirements
+A. AI-Driven Engagement Layer (Top of Funnel)
+Design interactive engagement modules that keep students coming back:
+
+Examples (you can innovate beyond these):
+• AI Career Navigator: Suggests best-fit countries, universities, and courses
+• ROI Calculator: Predicts salary outcomes vs cost of education
+• Admission Probability Predictor
+• Application Timeline Generator
+• Conversational Mentor / Copilot (chatbot for doubts)
+
+Must leverage:
+• LLMs (for conversational guidance)
+• Predictive models (for recommendations/scores)
+• Generative AI (content, simulations, essays, etc.)
+
+B. AI-Led Marketing & Growth Engine
+Design how the platform will:
+• Acquire users at scale using AI
+• Personalize engagement journeys
+
+You may Include (but not limited to):
+• AI-generated content (blogs, reels, newsletters)
+• Personalization engines (based on user behavior)
+• Engagement loops (gamification, streaks, rewards, referrals)
+• Smart nudges (timely notifications based on journey stage)
+Think:
+• “How does this platform become sticky and viral?”
+
+C. Conversion Layer (Loan Funnel Integration)
+Seamlessly integrate loan awareness and applications:
+• Personalized loan eligibility estimator
+• Dynamic loan offers (based on profile strength)
+• Financial planning tools (EMI, repayment scenarios)
+• AI-assisted loan application flow
+• Document checklist + auto-fill support
+
+D. AI-First Platform Design
+The solution must be:
+• Built largely using AI tools (no-code/low-code + APIs encouraged)
+• Include:
+o Frontend prototype (web/app)
+o Backend logic (can be simulated)
+o AI integrations (LLMs, APIs, agents)
+Examples:
+• Chatbot using LLM APIs
+• Recommendation engine using simple ML logic
+• Workflow automation using AI agents
+
+Technical Expectations
+Teams are encouraged to use:
+• LLM APIs (OpenAI, Claude, etc.)
+• No-code tools (Bubble, Webflow, Glide, etc.)
+• Vector databases / embeddings (optional)
+• Simple ML models or rule engines
+• APIs (mock or real)
+1.	Expected Outcome
+Each team must deliver:
+
+1. Working Prototype
+ Functional platform / app / chatbot
+Demonstrates:
+o Engagement module(s)
+o Acquisition techniques
+o AI-driven interaction
+o Loan conversion journey
+
+
+3. Solution Deck for shortlisting (Max 8–10 slides / 4 page documents)
+Must cover:
+• Problem understanding
+• Target persona
+• Platform design
+• AI architecture & tools used
+• Growth strategy
+• Monetization / business impact
+
+4. Optional (Bonus)
+• Live deployment link
+• Real or simulated user data
+• Advanced AI workflows (agents, memory, personalization loops)
+
+4. Judging Criteria
+1. Innovation & Creativity
+• Originality of engagement ideas
+• Differentiation from existing platforms
+• “Wow factor” of the experience
+2. AI Integration & Execution
+• Depth of AI usage (not superficial)
+• Smart use of LLMs / ML / automation
+• AI actually improves user experience
+3. User Experience & Engagement
+• Intuitive design
+• Stickiness of platform
+• Quality of interaction flows
+4. Business Relevance & Conversion Thinking
+• Clear path from engagement → loan application
+• Understanding of NBFC constraints
+• Scalability of solution
+5. Prototype Quality
+• Working demo
+• Functional flows
+• Technical completeness
+
+Bonus Challenge (Optional)
+Design a “zero human intervention” AI growth loop where:
+• Users are acquired, engaged, nurtured, and converted
+• Entire lifecycle is managed by AI agents
+
+
