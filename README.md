@@ -289,22 +289,22 @@ graph TD
 journey
     title Student Journey on StudyStack
     section Awareness
-      See AI-generated content on LinkedIn/Twitter: 3: Student
+      See AI content on LinkedIn or Twitter: 3: Student
     section Acquisition
-      Click → Landing Page → Google OAuth: 5: Student
+      Landing page and Google OAuth signup: 5: Student
     section Activation
-      Voice Agent opens → 10-min profile call: 5: Student, AI
+      Voice Agent 10-min profile call: 5: Student
       Dashboard unlocks with recommendations: 4: Student
     section Engagement
-      Daily dashboard updates & smart nudges: 4: Student, AI
+      Daily dashboard updates and nudges: 4: Student
       Journey tracker progress: 4: Student
     section Loan Discovery
-      Profile 70%+ → Loan intelligence activates: 5: Student, AI
-      Eligibility check → Personalized offers: 5: Student
+      Loan intelligence activates at 70 pct: 5: Student
+      Eligibility check and personalized offers: 5: Student
     section Conversion
-      AI document checklist → Lender application: 5: Student, AI
+      AI document checklist and lender app: 5: Student
     section Retention
-      Post-loan journey tracker & referral: 4: Student
+      Post-loan journey tracker and referral: 4: Student
 ```
 
 ---
