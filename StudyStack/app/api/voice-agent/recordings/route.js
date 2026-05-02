@@ -88,7 +88,7 @@ async function uploadToCloudinary(buffer, userId, sessionId) {
     const folder = `studystack/recordings/${userId}`;
     const publicId = `session-${sessionId || timestamp}`;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: 'video',
@@ -100,7 +100,7 @@ async function uploadToCloudinary(buffer, userId, sessionId) {
         (error, result) => {
           if (error) {
             console.error('[recordings] Cloudinary upload error:', error);
-            reject(error);
+            resolve(null); // Graceful — don't crash the server
           } else {
             resolve(result.secure_url);
           }

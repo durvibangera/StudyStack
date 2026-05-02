@@ -836,7 +836,7 @@ export default function CompleteDashboard() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => router.push("/dashboard/complete/counsellor-session")}
+                    onClick={() => window.dispatchEvent(new Event('open-counsellor'))}
                     className="h-8 gap-1.5 bg-cyan-500 text-white hover:bg-cyan-600 text-xs font-bold"
                   >
                     <Play className="h-3 w-3" /> Start Session

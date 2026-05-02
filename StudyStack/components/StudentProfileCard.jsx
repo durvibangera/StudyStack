@@ -97,7 +97,11 @@ export default function StudentProfileCard({ onResumeCall, refreshKey }) {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch('/api/kyc');
+      const res = await fetch('/api/kyc', { cache: 'no-store' });
+      if (res.status === 404) {
+        window.location.href = '/api/auth/signin?callbackUrl=/dashboard';
+        return;
+      }
       if (!res.ok) return;
 
       const data = await res.json();

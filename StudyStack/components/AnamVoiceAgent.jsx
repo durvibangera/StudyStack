@@ -26,6 +26,9 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
   const liveLineCountRef = useRef(0);
   const liveExtractingRef = useRef(false);
   const cancelledRef = useRef(false);
+  const autoSaveIntervalRef = useRef(null);
+  const lastSavedCountRef = useRef(0);
+  const hasSavedOnCleanupRef = useRef(false);
 
   const [status, setStatus] = useState('loading'); // loading | connecting | connected | extracting | disconnected | error
   const [errorMessage, setErrorMessage] = useState('');
@@ -118,6 +121,10 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
         return;
       }
 
+      // 20s timeout to prevent infinite spinner
+      const abort = new AbortController();
+      const tid = setTimeout(() => abort.abort(), 20000);
+
       const res = await fetch('/api/voice-agent/extract-kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,7 +133,10 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
           messages: currentMessages,
           sessionId: sessionIdRef.current,
         }),
+        signal: abort.signal,
       });
+
+      clearTimeout(tid);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
 
@@ -147,7 +157,11 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
       }, 1500);
     } catch (err) {
       console.error('[AnamVoiceAgent] KYC extraction error:', err);
-      toast.error('Could not extract profile. You can fill manually.');
+      if (err.name === 'AbortError') {
+        toast('Extraction timed out — your progress was saved via live sync.', { icon: '⏱️' });
+      } else {
+        toast.error('Could not extract profile. You can fill manually.');
+      }
       window.setTimeout(() => {
         if (!cancelledRef.current) onCompleteRef.current?.();
       }, 2000);
@@ -196,24 +210,43 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
 
   // ── Start recording the video stream ──
   const startRecording = useCallback((videoElement) => {
-    try {
-      const stream = videoElement.captureStream?.() || videoElement.mozCaptureStream?.();
-      if (!stream) return;
+    const attemptStart = () => {
+      try {
+        const stream = videoElement.captureStream?.() || videoElement.mozCaptureStream?.();
+        if (!stream) return false;
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-          ? 'video/webm;codecs=vp9'
-          : 'video/webm',
-      });
+        // Wait until there are actual tracks before starting
+        const tracks = stream.getTracks();
+        if (tracks.length === 0) return false;
 
-      recordedChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
-      };
-      recorder.start(1000); // chunk every 1s
-      mediaRecorderRef.current = recorder;
-    } catch (err) {
-      console.warn('[AnamVoiceAgent] Could not start recording:', err);
+        const recorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : 'video/webm',
+        });
+
+        recordedChunksRef.current = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+        };
+        recorder.start(1000);
+        mediaRecorderRef.current = recorder;
+        return true;
+      } catch (err) {
+        console.warn('[AnamVoiceAgent] Could not start recording:', err);
+        return false;
+      }
+    };
+
+    // Try immediately, then retry a few times with delay
+    if (!attemptStart()) {
+      let retries = 0;
+      const retryInterval = setInterval(() => {
+        retries++;
+        if (attemptStart() || retries >= 5) {
+          clearInterval(retryInterval);
+        }
+      }, 2000);
     }
   }, []);
 
@@ -236,10 +269,22 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
         setStatus('loading');
 
         // 1. Get session token from our server
+        const sessionBody = { mode: modeRef.current };
+        if (sessionMemory?.context) {
+          sessionBody.resumeContext = sessionMemory.context;
+        }
+
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 30000);
+
         const tokenRes = await fetch('/api/voice-agent/anam-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sessionBody),
+          signal: abortController.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!tokenRes.ok) {
           const err = await tokenRes.json().catch(() => ({}));
@@ -285,17 +330,26 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
             liveExtractIntervalRef.current = null;
           }
 
-          stopRecording();
-
-          // Extract KYC if onboarding and we haven't already
-          if (modeRef.current === 'onboarding' && !hasExtractedRef.current) {
-            extractAndSaveKyc();
-          } else if (modeRef.current !== 'onboarding') {
-            saveConversation('buddy');
+          // Stop auto-save
+          if (autoSaveIntervalRef.current) {
+            window.clearInterval(autoSaveIntervalRef.current);
+            autoSaveIntervalRef.current = null;
           }
 
-          // Upload recording
-          uploadRecording();
+          stopRecording();
+
+          // Extract KYC / save — but only once (guard against cleanup also saving)
+          if (!hasSavedOnCleanupRef.current && messagesRef.current.length > 0) {
+            hasSavedOnCleanupRef.current = true;
+            if (modeRef.current === 'onboarding' && !hasExtractedRef.current) {
+              extractAndSaveKyc();
+            } else if (modeRef.current !== 'onboarding') {
+              saveConversation('buddy');
+            }
+          }
+
+          // Upload recording — fire-and-forget, never block the flow
+          uploadRecording().catch(() => {});
         });
 
         // Message history for chat display
@@ -313,14 +367,41 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
         });
 
         // Real-time transcription for live display
+        // Track whether the stream is inside a <think> block so we can suppress it
+        let insideThinkBlock = false;
+        let thinkBuffer = '';
+
         client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event) => {
           if (cancelled) return;
           if (event.role === 'persona') {
             setIsPersonaSpeaking(!event.endOfSpeech);
             if (event.endOfSpeech) {
               setCurrentStreamText('');
+              insideThinkBlock = false;
+              thinkBuffer = '';
             } else {
-              setCurrentStreamText((prev) => prev + event.content);
+              // Accumulate into a buffer to detect <think> tags
+              thinkBuffer += event.content;
+
+              // Check if we're entering a think block
+              if (thinkBuffer.includes('<think>')) {
+                insideThinkBlock = true;
+              }
+
+              // Check if the think block has ended
+              if (insideThinkBlock && thinkBuffer.includes('</think>')) {
+                // Strip the entire think block and show only what's after it
+                thinkBuffer = thinkBuffer.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                insideThinkBlock = false;
+                setCurrentStreamText(thinkBuffer);
+              } else if (!insideThinkBlock) {
+                // Not in a think block — show content normally
+                // But still strip any stray think fragments
+                const cleaned = thinkBuffer.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                setCurrentStreamText(cleaned);
+              }
+              // If insideThinkBlock is true and </think> hasn't appeared yet,
+              // we intentionally do NOT update the display text (suppress thinking)
             }
           }
         });
@@ -371,19 +452,44 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
           });
         }
 
-        // 4. Start streaming to video element
-        if (videoRef.current) {
-          await client.streamToVideoElement('anam-video-element');
+        // 4. Start streaming to video element (with timeout)
+        // Wait for React to paint the video element after the 'connecting' state change
+        let waitAttempts = 0;
+        while (!document.getElementById('anam-video-element') && waitAttempts < 20) {
+          await new Promise((r) => setTimeout(r, 100));
+          waitAttempts++;
+        }
+
+        const videoEl = document.getElementById('anam-video-element');
+        if (videoEl) {
+          await Promise.race([
+            client.streamToVideoElement('anam-video-element'),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Streaming connection timed out')), 20000)
+            ),
+          ]);
           // Start recording once video is playing
-          if (videoRef.current) {
-            startRecording(videoRef.current);
-          }
+          startRecording(videoEl);
+        } else {
+          throw new Error('Video element could not be found to start streaming');
         }
       } catch (err) {
         if (cancelled) return;
         console.error('[AnamVoiceAgent] Init error:', err);
+        
+        // If the user record was deleted but they still have a session cookie
+        if (err.message && err.message.includes('User not found')) {
+          window.location.href = '/api/auth/signin?callbackUrl=/dashboard';
+          return;
+        }
+        
+        const isTimeout = err.name === 'AbortError' || err.message?.includes('timed out');
         setStatus('error');
-        setErrorMessage(err.message || 'Failed to initialize the AI assistant.');
+        setErrorMessage(
+          isTimeout
+            ? 'Connection to AI service timed out. Please check your network and try again.'
+            : err.message || 'Failed to initialize the AI assistant.'
+        );
       }
     };
 
@@ -400,16 +506,25 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
         liveExtractIntervalRef.current = null;
       }
 
-      stopRecording();
-
-      // Save data on unmount
-      if (modeRef.current === 'onboarding' && !hasExtractedRef.current) {
-        extractAndSaveKyc();
-      } else if (modeRef.current !== 'onboarding') {
-        saveConversation(modeRef.current);
+      // Stop auto-save
+      if (autoSaveIntervalRef.current) {
+        window.clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
       }
 
-      uploadRecording();
+      stopRecording();
+
+      // Save data on unmount — but only once
+      if (!hasSavedOnCleanupRef.current && messagesRef.current.length > 0) {
+        hasSavedOnCleanupRef.current = true;
+        if (modeRef.current === 'onboarding' && !hasExtractedRef.current) {
+          extractAndSaveKyc();
+        } else if (modeRef.current !== 'onboarding') {
+          saveConversation(modeRef.current);
+        }
+      }
+
+      uploadRecording().catch(() => {});
 
       // Stop Anam streaming and completely close the connection
       if (anamClientRef.current) {
@@ -449,9 +564,31 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
+  // ── Periodic auto-save of conversation messages (every 30s) ──
+  useEffect(() => {
+    if (status !== 'connected') return;
+
+    autoSaveIntervalRef.current = window.setInterval(() => {
+      const currentMessages = messagesRef.current;
+      if (currentMessages.length > lastSavedCountRef.current) {
+        lastSavedCountRef.current = currentMessages.length;
+        saveConversation(modeRef.current).catch(() => {});
+      }
+    }, 30000);
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        window.clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
+      }
+    };
+  }, [status, saveConversation]);
+
   // ── Retry handler ──
   const handleRetry = useCallback(() => {
     hasExtractedRef.current = false;
+    hasSavedOnCleanupRef.current = false;
+    lastSavedCountRef.current = 0;
     messagesRef.current = [];
     setChatMessages([]);
     setStatus('loading');
@@ -459,7 +596,24 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
     setRetryCount((c) => c + 1);
   }, []);
 
+  // ── Safety: auto-timeout loading/connecting states after 55s ──
+  // Individual steps have their own timeouts (30s token + 20s stream).
+  // This is a last-resort fallback.
+  useEffect(() => {
+    if (status !== 'loading' && status !== 'connecting') return;
+
+    const safetyTimer = setTimeout(() => {
+      setStatus('error');
+      setErrorMessage('Connection timed out. Please check your network and try again.');
+    }, 55000);
+
+    return () => clearTimeout(safetyTimer);
+  }, [status, retryCount]);
+
   // ── Render: Loading state ──
+  // NOTE: 'connecting' must NOT early-return here — the <video> element
+  // must be in the DOM for streamToVideoElement() to work. The main render
+  // already has a "Connecting" overlay for that state.
   if (status === 'loading') {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -467,6 +621,12 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
           <div className="h-10 w-10 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent" />
           <p className="ivy-font text-base font-semibold text-foreground">Preparing your AI counsellor...</p>
           <p className="ivy-font text-sm text-muted-foreground">Setting up Aria's avatar and memory</p>
+          <button
+            onClick={() => onCompleteRef.current?.()}
+            className="mt-2 text-xs text-muted-foreground/70 underline hover:text-foreground transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
@@ -515,6 +675,16 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
           <p className="ivy-font text-sm text-muted-foreground">
             This takes a few seconds
           </p>
+          <button
+            onClick={() => {
+              setStatus('disconnected');
+              toast('Skipped extraction — your live progress was already saved.', { icon: '⚡' });
+              window.setTimeout(() => onCompleteRef.current?.(), 500);
+            }}
+            className="mt-2 text-xs text-muted-foreground/70 underline hover:text-foreground transition-colors cursor-pointer"
+          >
+            Skip and exit
+          </button>
         </div>
       </div>
     );

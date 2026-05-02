@@ -45,7 +45,7 @@ async function fetchMessages(token, timeFrom) {
 export async function GET() {
   const token = process.env.WHAPI_TOKEN;
   if (!token) {
-    return NextResponse.json({ error: 'WHAPI_TOKEN not configured' }, { status: 500 });
+    return NextResponse.json({ processed: 0, disabled: true, reason: 'WHAPI_TOKEN not configured' });
   }
 
   try {

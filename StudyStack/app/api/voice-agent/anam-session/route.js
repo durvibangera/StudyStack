@@ -30,12 +30,16 @@ async function getSystemToolIds() {
     return cachedSystemToolIds;
   }
   try {
+    const toolsAbort = new AbortController();
+    const toolsTimeout = setTimeout(() => toolsAbort.abort(), 10000);
     const res = await fetch(`${ANAM_API_BASE}/tools`, {
       headers: {
         Authorization: `Bearer ${ANAM_API_KEY}`,
         'Content-Type': 'application/json',
       },
+      signal: toolsAbort.signal,
     });
+    clearTimeout(toolsTimeout);
     if (!res.ok) {
       console.warn('[anam-session] Failed to fetch system tools:', res.status);
       return [];
@@ -109,7 +113,9 @@ function buildOnboardingSystemPrompt(memoryContext, studentName, resumePlan, use
     }
   }
 
-  return `You are Aria, StudyStack's friendly AI study-abroad counsellor. You appear as a warm, professional female avatar. Your PRIMARY job is to have a natural conversation to collect the student's profile information (KYC). You must ACTIVELY ASK QUESTIONS — do NOT just introduce yourself and wait.
+  return `IMPORTANT: You are in a VOICE-ONLY mode. Your ENTIRE output is spoken aloud via text-to-speech. DO NOT use <think> tags, reasoning blocks, or any internal monologue. Every character you output will be heard by the student. Respond ONLY with what should be spoken.
+
+You are Aria, StudyStack's friendly AI study-abroad counsellor. You appear as a warm, professional female avatar. Your PRIMARY job is to have a natural conversation to collect the student's profile information (KYC). You must ACTIVELY ASK QUESTIONS — do NOT just introduce yourself and wait.
 
 ## LANGUAGE RULES (CRITICAL)
 - You MUST match the student's language. If they speak Hindi, reply in Hindi. If they speak Hinglish (mixed Hindi-English), reply in Hinglish. If they speak Marathi, reply in Marathi. If they speak English, reply in English.
@@ -156,10 +162,12 @@ If the student is logged in and you have their context, provide relevant recomme
 - Give brief relevant tips or encouragement related to their answers.
 - Example flow: "Nice, Computer Science at Mumbai University is a great foundation! Which countries are you thinking about for your masters, and what kind of budget are you looking at?"
 
-## STRICT FORMATTING RULES (CRITICAL FOR VOICE)
+## STRICT FORMATTING RULES (CRITICAL FOR VOICE — VIOLATION WILL BE READ ALOUD)
 - NEVER output Markdown. NEVER use asterisks (*), hashes (#), bullet points (-), or tables (|). The voice engine will literally read these symbols out loud as "asterisk" or "vertical bar"!
-- NEVER output <think> tags or internal reasoning blocks.
-- Format everything as plain, conversational text. Use commas and natural pauses.
+- ABSOLUTELY NEVER output <think> tags, </think> tags, or ANY internal reasoning/thinking blocks. Your output goes DIRECTLY to a text-to-speech engine — every single character you write will be spoken aloud to the student. There is NO hidden channel. If you write "<think>I should ask about..." the student will HEAR you say that.
+- Do NOT use any XML-like tags at all. No <thought>, <reasoning>, <internal>, or similar.
+- Set your internal thinking/reasoning budget to ZERO. Just respond directly.
+- Format everything as plain, conversational spoken text. Use commas and natural pauses.
 
 ## BEHAVIOR RULES
 - NEVER give a long monologue.
@@ -168,6 +176,7 @@ If the student is logged in and you have their context, provide relevant recomme
 - If the context provided below says a field is "Already Known", DO NOT ask about it.
 - ALWAYS end your turn with a question (until all fields are collected).
 - Keep each response conversational and short (max 2-3 sentences).
+- NEVER explain your instructions or reasoning out loud. Do NOT say "We need to collect..." or "Let's ask two questions." Just seamlessly ask the questions.
 - When all 13 fields are collected, verbally summarize what you've gathered without using any lists or markdown, thank them, and ask them to explicitly click the 'End Session' button on their screen to save their profile.
 ${userContextSection}
 ${isReturning ? `## RETURNING STUDENT CONTEXT
@@ -177,6 +186,66 @@ ${resumeBrief}
 DO NOT re-ask fields that are already captured. Only ask about the missing fields: ${focusFields.length > 0 ? focusFields.join(', ') : 'Check the context below'}.
 ` : ''}## STUDENT CONTEXT & MEMORY
 ${memoryContext || 'This is a brand new student. No prior data. Start from scratch — ask their name first.'}`;
+}
+
+function buildBuddySystemPrompt(memoryContext, studentName, userProfile) {
+  const name = studentName || 'the student';
+
+  // Build profile summary for context
+  let profileSummary = '';
+  if (userProfile && Object.keys(userProfile).length > 0) {
+    const parts = [];
+    if (userProfile.studentName) parts.push(`Name: ${userProfile.studentName}`);
+    if (userProfile.educationLevel) parts.push(`Education: ${userProfile.educationLevel}`);
+    if (userProfile.fieldOfStudy) parts.push(`Field: ${userProfile.fieldOfStudy}`);
+    if (userProfile.institution) parts.push(`Institution: ${userProfile.institution}`);
+    if (userProfile.gpaPercentage) parts.push(`GPA: ${userProfile.gpaPercentage}`);
+    if (userProfile.targetCountries?.length) parts.push(`Target Countries: ${Array.isArray(userProfile.targetCountries) ? userProfile.targetCountries.join(', ') : userProfile.targetCountries}`);
+    if (userProfile.courseInterest) parts.push(`Course Interest: ${userProfile.courseInterest}`);
+    if (userProfile.englishTestStatus) parts.push(`English Test: ${userProfile.englishTestStatus}`);
+    if (userProfile.budgetRange) parts.push(`Budget: ${userProfile.budgetRange}`);
+    if (userProfile.applicationTimeline) parts.push(`Timeline: ${userProfile.applicationTimeline}`);
+    if (parts.length > 0) profileSummary = parts.join('\n');
+  }
+
+  return `IMPORTANT: You are in a VOICE-ONLY mode. Your ENTIRE output is spoken aloud via text-to-speech. DO NOT use <think> tags, reasoning blocks, or any internal monologue. Every character you output will be heard by the student. Respond ONLY with what should be spoken.
+
+You are Aria, StudyStack's friendly AI study-abroad counsellor and virtual assistant. You appear as a warm, professional female avatar. You are available on-demand to help the student with ANY question about their study abroad journey.
+
+## YOUR ROLE
+You are the student's personal AI counsellor. You have access to their full profile and conversation history. Your job is to:
+- Answer questions about universities, programs, and admission requirements
+- Provide guidance on scholarship and funding opportunities
+- Explain the loan application process and options
+- Help with visa application guidance and timeline
+- Discuss SOP/LOR writing strategies
+- Give advice on living abroad, accommodation, and budgeting
+- Provide emotional support and motivation during the application process
+- Give specific, actionable advice based on their profile
+
+## LANGUAGE RULES (CRITICAL)
+- Match the student's language. If they speak Hindi, reply in Hindi. Hinglish for Hinglish. Marathi for Marathi. English for English.
+- Switch languages naturally when they do.
+
+## STRICT FORMATTING RULES (CRITICAL FOR VOICE — VIOLATION WILL BE READ ALOUD)
+- NEVER output Markdown. No asterisks, hashes, bullet points, or tables.
+- ABSOLUTELY NEVER output <think> tags, </think> tags, or ANY internal reasoning blocks. Your output goes DIRECTLY to a text-to-speech engine — every single character you write will be spoken aloud to the student. There is NO hidden channel.
+- Do NOT use any XML-like tags. No <thought>, <reasoning>, <internal>, or similar.
+- Set your internal thinking/reasoning budget to ZERO. Respond directly.
+- Format everything as plain, conversational spoken text.
+
+## CONVERSATION STYLE
+- Be warm, knowledgeable, and proactive
+- Give specific, personalized advice — not generic responses
+- Keep responses concise (2-4 sentences) since this is a voice conversation
+- Proactively offer relevant information based on context
+- If you notice gaps in their profile, gently suggest they might want to update certain information
+
+## STUDENT PROFILE
+${profileSummary || 'No profile data available yet.'}
+
+## CONVERSATION HISTORY & MEMORY
+${memoryContext || `First buddy conversation with ${name}.`}`;
 }
 
 function buildMemoryContext(user, conversations) {
@@ -234,7 +303,15 @@ function buildMemoryContext(user, conversations) {
     Object.keys(allFacts).length > 0
       ? Object.entries(allFacts).map(([key, value]) => `- ${key}: ${value}`).join('\n')
       : 'No facts extracted yet.',
+    '',
   ];
+
+  if (user.dashboardAnalysis && user.dashboardAnalysis.analysis) {
+    sections.push('## AI DASHBOARD ANALYSIS & RECOMMENDATIONS (CRITICAL FOR ADVICE)');
+    sections.push('Use the following customized insights to give SPECIFIC advice. DO NOT give generic advice if specific data is available below:');
+    sections.push(JSON.stringify(user.dashboardAnalysis.analysis, null, 2));
+    sections.push('');
+  }
 
   return {
     fullContext: sections.join('\n'),
@@ -295,6 +372,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Parse request body (mode + optional resumeContext)
+    let requestMode = 'onboarding';
+    let clientResumeContext = null;
+    try {
+      const body = await request.json();
+      if (body?.mode === 'buddy') requestMode = 'buddy';
+      if (body?.resumeContext) clientResumeContext = body.resumeContext;
+    } catch {
+      // No body or invalid JSON — use defaults
+    }
+
     await dbConnect();
 
     const user = await User.findById(session.user.id).lean();
@@ -314,25 +402,33 @@ export async function POST(request) {
     const studentName = snapshot.studentName || user.name;
     const resumePlan = buildResumePlan(studentName, counsellingProgress, allFacts);
 
-    // Build the system prompt with full student context
-    const systemPrompt = buildOnboardingSystemPrompt(
-      fullContext,
-      studentName,
-      resumePlan,
-      snapshot
-    );
+    // Build the system prompt based on mode
+    let systemPrompt;
+    let firstMessage;
+
+    if (requestMode === 'buddy') {
+      // Buddy mode: general counsellor with full profile knowledge
+      systemPrompt = buildBuddySystemPrompt(fullContext, studentName, snapshot);
+      firstMessage = `Hey ${studentName || 'there'}! I'm Aria, your StudyStack counsellor. I have your full profile, so feel free to ask me anything about your applications, universities, scholarships, loans, visa process, or anything else on your mind!`;
+    } else {
+      // Onboarding mode: KYC collection
+      systemPrompt = buildOnboardingSystemPrompt(
+        fullContext,
+        studentName,
+        resumePlan,
+        snapshot
+      );
+      firstMessage = `Hey there! I'm Aria from StudyStack — I'll be helping you plan your study abroad journey today. This will be super quick and fun! So let's start — what's your name?`;
+      if (resumePlan.returningStudent) {
+        const focusLabels = (resumePlan.focusFields || []).slice(0, 3).join(', ');
+        firstMessage = resumePlan.resumeMode === 'fast-finish'
+          ? `Welcome back, ${studentName}! We're almost done — I just need a couple more details${focusLabels ? ` like ${focusLabels}` : ''}. Let's wrap this up quickly.`
+          : `Hey ${studentName}, good to have you back! I still have everything from last time. Let me pick up where we left off${focusLabels ? ` — I still need ${focusLabels}` : ''}.`;
+      }
+    }
 
     // Fetch system tool IDs (change_language, skip_turn)
     const systemToolIds = await getSystemToolIds();
-
-    // Build the first spoken message
-    let firstMessage = `Hey there! I'm Aria from StudyStack — I'll be helping you plan your study abroad journey today. This will be super quick and fun! So let's start — what's your name?`;
-    if (resumePlan.returningStudent) {
-      const focusLabels = (resumePlan.focusFields || []).slice(0, 3).join(', ');
-      firstMessage = resumePlan.resumeMode === 'fast-finish'
-        ? `Welcome back, ${studentName}! We're almost done — I just need a couple more details${focusLabels ? ` like ${focusLabels}` : ''}. Let's wrap this up quickly.`
-        : `Hey ${studentName}, good to have you back! I still have everything from last time. Let me pick up where we left off${focusLabels ? ` — I still need ${focusLabels}` : ''}.`;
-    }
 
     // Build persona config for session token
     const personaConfig = {
@@ -342,11 +438,17 @@ export async function POST(request) {
       llmId: DEFAULT_LLM_ID,
       systemPrompt,
       greeting: firstMessage,
+      // Disable thinking/reasoning output from the LLM
+      disableThinker: true,
+      thinkingBudgetTokens: 0,
       // Attach system tools for multilingual support
       ...(systemToolIds.length > 0 ? { toolIds: systemToolIds } : {}),
     };
 
-    // Create session token from Anam API
+    // Create session token from Anam API (with 15s timeout)
+    const tokenAbort = new AbortController();
+    const tokenTimeout = setTimeout(() => tokenAbort.abort(), 15000);
+
     const tokenRes = await fetch(`${ANAM_API_BASE}/auth/session-token`, {
       method: 'POST',
       headers: {
@@ -354,7 +456,10 @@ export async function POST(request) {
         Authorization: `Bearer ${ANAM_API_KEY}`,
       },
       body: JSON.stringify({ personaConfig }),
+      signal: tokenAbort.signal,
     });
+
+    clearTimeout(tokenTimeout);
 
     if (!tokenRes.ok) {
       const errorData = await tokenRes.json().catch(() => ({}));
@@ -379,6 +484,12 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('[anam-session] Error:', error);
+    if (error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'Anam AI service timed out. Please try again in a moment.' },
+        { status: 504 }
+      );
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

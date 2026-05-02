@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { AvatarPicker } from "@/components/ui/avatar-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,10 +53,15 @@ export default function Dashboard() {
   const [preparedVoiceSession, setPreparedVoiceSession] = useState(null);
   // Counter to force StudentProfileCard refresh after voice agent completes
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const debounceTimerRef = useRef(null);
 
   const refreshDashboardState = useCallback(async () => {
     try {
       const res = await fetch('/api/kyc', { cache: 'no-store' });
+      if (res.status === 404) {
+        signOut({ callbackUrl: '/api/auth/signin' });
+        return { isComplete: false, filledCount: 0, latestConversationId: null };
+      }
       if (!res.ok) throw new Error();
 
       const data = await res.json();
@@ -94,12 +99,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     const handleProfileUpdate = () => {
-      refreshDashboardState();
+      // Debounce: wait 3s after last event before refreshing
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        refreshDashboardState();
+      }, 3000);
     };
 
     window.addEventListener('counselling-profile:updated', handleProfileUpdate);
     return () => {
       window.removeEventListener('counselling-profile:updated', handleProfileUpdate);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, [refreshDashboardState]);
 
@@ -108,40 +118,30 @@ export default function Dashboard() {
     setPreparedVoiceSession(null);
     setProfileRefreshKey((k) => k + 1);
 
-    // Wait for ElevenLabs to finalize transcript before fetching results
-    await new Promise((r) => setTimeout(r, 2500));
+    // Wait for extraction to finalize
+    await new Promise((r) => setTimeout(r, 1500));
 
     const state = await refreshDashboardState();
     if (state.isComplete) {
       await updateSession({ hasCompletedKYC: true });
-      return;
     }
-
-    // Safety net: if extraction didn't populate the profile, retry once
-    if (state.filledCount === 0 && state.latestConversationId) {
-      try {
-        const retryRes = await fetch('/api/voice-agent/extract-kyc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId: state.latestConversationId }),
-        });
-        if (retryRes.ok) {
-          const retried = await refreshDashboardState();
-          if (retried.isComplete) {
-            await updateSession({ hasCompletedKYC: true });
-          }
-        }
-      } catch {
-        // Non-fatal — the primary extraction path handles most cases
-      }
-    }
+    // Don't retry extraction — the live-extract and extract-kyc in the voice agent
+    // already saved data to MongoDB. Re-extracting with stale conversationId can overwrite.
   }, [refreshDashboardState, updateSession]);
 
   const handleResumeCall = useCallback(async () => {
     setPreparingResumeCall(true);
 
     try {
-      const res = await fetch('/api/voice-agent/memory?prepareResume=1', { cache: 'no-store' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const res = await fetch('/api/voice-agent/memory?prepareResume=1', {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       if (!res.ok) throw new Error('Failed to prepare resume context');
 
       const data = await res.json();
@@ -152,11 +152,15 @@ export default function Dashboard() {
       });
       setShowVoiceAgent(true);
     } catch (error) {
-      console.error('[Dashboard] Resume preparation failed:', error);
+      if (error.name === 'AbortError') {
+        console.warn('[Dashboard] Resume preparation timed out, falling back to dynamic init');
+      } else {
+        console.error('[Dashboard] Resume preparation failed:', error);
+      }
+      // Fallback: open voice agent anyway without prepared context
+      // The anam-session API will build context from DB on its own
       setPreparedVoiceSession(null);
-      // Don't open voice agent on failure — show error instead
-      const toast = (await import('react-hot-toast')).default;
-      toast.error('Could not prepare resume session. Please try again.');
+      setShowVoiceAgent(true);
     } finally {
       setPreparingResumeCall(false);
     }
@@ -176,15 +180,11 @@ export default function Dashboard() {
     setShowFillMethod(false);
   };
 
-  // Auto-redirect to the complete dashboard when all fields are filled
-  useEffect(() => {
-    if (kycStatus === 'completed' && counsellingProgress?.isComplete) {
-      router.replace('/dashboard/complete');
-    }
-  }, [kycStatus, counsellingProgress, router]);
+  // NOTE: Removed auto-redirect to /dashboard/complete to prevent reload loop.
+  // User clicks "Proceed to Dashboard" button instead.
 
   // ── Loading state ──
-  if (kycStatus === 'loading' || (kycStatus === 'completed' && counsellingProgress?.isComplete)) {
+  if (kycStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -244,7 +244,14 @@ export default function Dashboard() {
             <div className="rounded-[28px] border border-border/50 bg-card/85 px-8 py-7 text-center shadow-2xl">
               <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
               <h2 className="ivy-font mt-4 text-2xl font-bold text-foreground">Preparing resume flow</h2>
-              
+              <p className="ivy-font mt-2 text-sm text-muted-foreground">Loading your conversation history...</p>
+              <button
+                type="button"
+                onClick={() => setPreparingResumeCall(false)}
+                className="ivy-font mt-4 text-sm font-medium text-muted-foreground underline hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}

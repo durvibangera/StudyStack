@@ -20,7 +20,11 @@ export default function LiveKYCChecklist({ active = true, className = '' }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/kyc');
+        const res = await fetch('/api/kyc', { cache: 'no-store' });
+        if (res.status === 404) {
+          window.location.href = '/api/auth/signin?callbackUrl=/dashboard';
+          return;
+        }
         if (!res.ok) return;
 
         const data = await res.json();
@@ -38,7 +42,7 @@ export default function LiveKYCChecklist({ active = true, className = '' }) {
     window.addEventListener('counselling-profile:updated', handleProfileUpdate);
 
     if (active) {
-      intervalRef.current = window.setInterval(fetchProfile, 3000);
+      intervalRef.current = window.setInterval(fetchProfile, 12000);
     }
 
     return () => {

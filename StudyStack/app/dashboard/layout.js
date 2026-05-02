@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 import WhatsAppPoller from "@/components/WhatsAppPoller";
+import dynamic from "next/dynamic";
+
+const FloatingCounsellor = dynamic(() => import('@/components/FloatingCounsellor'), { ssr: false });
 
 export default function DashboardLayout({ children }) {
   const { data: session } = useSession();
@@ -65,6 +68,9 @@ export default function DashboardLayout({ children }) {
 
       {/* Background WhatsApp message poller (no webhook needed) */}
       <WhatsAppPoller />
+
+      {/* On-demand AI Counsellor — available to students on all dashboard pages */}
+      {role !== 'counsellor' && <FloatingCounsellor />}
     </>
   );
 }
