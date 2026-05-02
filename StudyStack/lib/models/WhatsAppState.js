@@ -24,6 +24,5 @@ const WhatsAppStateSchema = new mongoose.Schema(
   },
 );
 
-WhatsAppStateSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 1800 });
 
 export default mongoose.models.WhatsAppState || mongoose.model('WhatsAppState', WhatsAppStateSchema);

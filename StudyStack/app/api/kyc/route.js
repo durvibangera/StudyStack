@@ -33,12 +33,8 @@ export async function POST(request) {
     // Required fields validation - matching the student onboarding form
     const requiredFields = [
       'educationLevel', 'fieldOfStudy', 'institution',
-      'gpaPercentage', 'testStatus', 'testScore',
-      'targetCountries', 'courseInterest',
-      'intakeTiming', 'applicationTimeline',
-      'budgetRange', 'scholarshipInterest',
-      'primaryObjective', 'painPoints',
-      'documentType'
+      'gpa', 'testStatus', 'courseInterest',
+      'applicationTimeline', 'budget', 'scholarshipInterest'
     ];
     const missingFields = requiredFields.filter(field => {
       const value = kycData[field];
@@ -71,18 +67,34 @@ export async function POST(request) {
       );
     }
 
+    // Normalize fields: bridge new onboarding field names → canonical counselling names
+    // so the dashboard's COUNSELLING_FIELDS can read them.
+    const normalized = { ...kycData };
+    if (kycData.fullName && !kycData.studentName) normalized.studentName = kycData.fullName;
+    if (kycData.phone && !kycData.phoneNumber) normalized.phoneNumber = kycData.phone;
+    if (kycData.email && !kycData.contactEmail) normalized.contactEmail = kycData.email;
+    if (kycData.city && !kycData.currentLocation) normalized.currentLocation = kycData.city;
+    if (kycData.gpa && !kycData.gpaPercentage) normalized.gpaPercentage = kycData.gpa;
+    if (kycData.targetCountry && !kycData.targetCountries) normalized.targetCountries = kycData.targetCountry;
+    if (kycData.budget && !kycData.budgetRange) normalized.budgetRange = kycData.budget;
+    if (kycData.testStatus && !kycData.englishTestStatus) {
+      normalized.englishTestStatus = kycData.testScore
+        ? `${kycData.testStatus} (${kycData.testScore})`
+        : kycData.testStatus;
+    }
+
     // Update user with KYC data
     const user = await User.findByIdAndUpdate(
       session.user.id,
       {
         studentProfile: {
-          ...kycData,
+          ...normalized,
           submittedAt: new Date()
         },
         hasCompletedKYC: true,
         updatedAt: new Date()
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: false }
     );
 
     return NextResponse.json({

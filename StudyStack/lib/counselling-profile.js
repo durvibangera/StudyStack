@@ -205,16 +205,40 @@ export function buildEnglishTestStatus(profile = {}) {
   return '';
 }
 
+/**
+ * Map of canonical counselling field keys → alternate keys used by
+ * the new Onboarding form.  getCounsellingFieldValue checks
+ * the canonical key first, then falls back to the alternate.
+ */
+const FIELD_ALIASES = {
+  studentName: 'fullName',
+  phoneNumber: 'phone',
+  contactEmail: 'email',
+  currentLocation: 'city',
+  gpaPercentage: 'gpa',
+  targetCountries: 'targetCountry',
+  budgetRange: 'budget',
+};
+
 export function getCounsellingFieldValue(profile = {}, key) {
   if (key === 'englishTestStatus') {
     return buildEnglishTestStatus(profile);
   }
 
   if (key === 'targetCountries') {
-    return normalizeArrayValue(profile.targetCountries);
+    const primary = normalizeArrayValue(profile.targetCountries);
+    if (primary.length > 0) return primary;
+    return normalizeArrayValue(profile.targetCountry);
   }
 
-  return normalizeStringValue(profile?.[key]);
+  // Try canonical key first, then its alias
+  const direct = normalizeStringValue(profile?.[key]);
+  if (direct) return direct;
+
+  const alias = FIELD_ALIASES[key];
+  if (alias) return normalizeStringValue(profile?.[alias]);
+
+  return '';
 }
 
 export function isMeaningfulCounsellingValue(value) {
@@ -262,6 +286,9 @@ export function buildCounsellingFactMap(profile = {}) {
 
   return facts;
 }
+
+/** Expose aliases so the KYC route can normalize incoming payloads. */
+export { FIELD_ALIASES };
 
 export function normalizeCounsellingProfilePatch(extracted = {}) {
   const patch = {};

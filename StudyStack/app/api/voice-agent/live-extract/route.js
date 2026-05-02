@@ -89,7 +89,7 @@ export async function POST(request) {
     // 2. Lightweight Gemini extraction
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are extracting structured student facts from an ongoing overseas education counselling call.
 

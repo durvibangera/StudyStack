@@ -523,14 +523,20 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await fetch('/api/kyc', {
+      const res = await fetch('/api/kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-    } catch {}
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save profile');
+      }
+      setDone(true);
+    } catch (err) {
+      toast.error(err.message || 'Something went wrong');
+    }
     setIsSubmitting(false);
-    setDone(true);
   };
 
   // ── Step card contents ──

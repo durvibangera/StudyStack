@@ -237,16 +237,16 @@ function VoiceSessionsPanel({ sessions }) {
               <span>{Math.round((s.callDuration || 0) / 60)}m {(s.callDuration || 0) % 60}s call</span>
               <span>•</span>
               <span>{s.messagesCount} messages</span>
-              {s.studentProfile?.targetCountries?.length > 0 && (
+              {(s.studentProfile?.targetCountries?.length > 0 || s.studentProfile?.targetCountry?.length > 0) && (
                 <>
                   <span>•</span>
-                  <span>{s.studentProfile.targetCountries.join(', ')}</span>
+                  <span>{(s.studentProfile.targetCountries || s.studentProfile.targetCountry || []).join(', ')}</span>
                 </>
               )}
-              {s.studentProfile?.testStatus && (
+              {(s.studentProfile?.testStatus || s.studentProfile?.englishTestStatus) && (
                 <>
                   <span>•</span>
-                  <span>Test: {s.studentProfile.testStatus}</span>
+                  <span>Test: {s.studentProfile.testStatus || s.studentProfile.englishTestStatus}</span>
                 </>
               )}
             </div>

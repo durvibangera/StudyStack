@@ -267,7 +267,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground ivy-font">GPA / Percentage</p>
-                    <p className="font-medium ivy-font">{studentProfile.gpaPercentage || 'N/A'}</p>
+                    <p className="font-medium ivy-font">{studentProfile.gpaPercentage || studentProfile.gpa || 'N/A'}</p>
                   </div>
                 </div>
 
@@ -278,7 +278,11 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground ivy-font">Target Countries</p>
-                    <p className="font-medium ivy-font">{Array.isArray(studentProfile.targetCountries) ? studentProfile.targetCountries.join(', ') : (studentProfile.targetCountries || 'N/A')}</p>
+                    <p className="font-medium ivy-font">{(() => {
+                      const countries = studentProfile.targetCountries || studentProfile.targetCountry;
+                      if (Array.isArray(countries)) return countries.join(', ');
+                      return countries || 'N/A';
+                    })()}</p>
                   </div>
                 </div>
 

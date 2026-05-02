@@ -37,6 +37,7 @@ export default function DashboardLayout({ children }) {
       ]
     : [
         { label: "Dashboard", link: "/dashboard", ariaLabel: "Student Dashboard" },
+        { label: "Loan", link: "/dashboard/loan", ariaLabel: "Loan Intelligence" },
       ];
 
   return (

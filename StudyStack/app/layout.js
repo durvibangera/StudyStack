@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/studystack.svg" />
         <meta name="theme-color" content="#0f172a" />
       </head>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <ToastProvider />

@@ -37,7 +37,7 @@ async function detectIntent(message) {
 
   // Fallback to Gemini for ambiguous messages
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(
       `Classify this WhatsApp message from a student to a study-abroad counselling service into one of these intents: schedule_booking, cancel_booking, status_check, general.\n\nMessage: "${message}"\n\nReply with ONLY the intent label, nothing else.`
     );
@@ -60,7 +60,7 @@ async function parseDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const today = new Date().toISOString().split('T')[0];
     const result = await model.generateContent(
       `Today is ${today}. Convert these into an ISO 8601 datetime string (UTC+5:30 IST):\nDate: "${dateStr}"\nTime: "${timeStr}"\n\nReply with ONLY the ISO string like "2026-04-10T10:00:00+05:30", nothing else. If you cannot parse, reply "null".`
@@ -191,7 +191,7 @@ async function buildStudentContext(user, phoneNumber) {
  */
 async function generateContextReply(messageText, studentContext, studentName) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(
       `You are StudyStack's WhatsApp counselling assistant — a warm, professional study-abroad advisor.
 
