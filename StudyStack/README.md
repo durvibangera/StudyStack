@@ -176,8 +176,10 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
-# Gemini AI
-GEMINI_API_KEY=your-gemini-api-key
+# Gemini AI (Vertex AI)
+GEMINI_API_KEY=your-vertex-ai-api-key
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
 ```
 
 📖 **New:** See [`CLOUDINARY_QUICKSTART.md`](./CLOUDINARY_QUICKSTART.md) for Cloudinary setup

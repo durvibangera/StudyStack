@@ -167,7 +167,9 @@ export async function POST(request) {
     }
 
     const { GoogleGenAI } = await import('@google/genai');
-    const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const client = new GoogleGenAI({
+      apiKey: GEMINI_API_KEY,
+    });
 
     const configParams = {
       aspect_ratio: aspectRatio,
@@ -421,7 +423,9 @@ export async function GET(request) {
           console.log('🔇 Audio safety filter triggered — retrying with Veo 2.0 (silent model)...');
           try {
             const { GoogleGenAI } = await import('@google/genai');
-            const retryClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+            const retryClient = new GoogleGenAI({
+              apiKey: GEMINI_API_KEY,
+            });
 
             const retryConfig = { ...storedOp.config };
             // Veo 2 supports dont_allow for personGeneration in text-to-video

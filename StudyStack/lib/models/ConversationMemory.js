@@ -23,6 +23,7 @@ const ConversationMemorySchema = new mongoose.Schema({
     unique: true,
   },
   agentId: { type: String },
+  anamSessionId: { type: String, default: '' },
   messages: [MessageSchema],
   summary: { type: String, default: '' },
   extractedFacts: {
@@ -33,9 +34,14 @@ const ConversationMemorySchema = new mongoose.Schema({
   callDurationSecs: { type: Number, default: 0 },
   mode: {
     type: String,
-    enum: ['onboarding', 'buddy'],
+    enum: ['onboarding', 'buddy', 'counselling'],
     default: 'buddy',
   },
+  // Anam AI specific fields
+  recordingUrl: { type: String, default: '' },
+  recordingDuration: { type: Number, default: 0 },
+  language: { type: String, default: 'en' },
+  transcriptText: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
 

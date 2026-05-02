@@ -19,67 +19,87 @@ export async function POST(request) {
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
-    const { conversationId, mode } = parsed;
-    if (!conversationId) {
-      return NextResponse.json({ error: 'conversationId is required' }, { status: 400 });
-    }
 
-    // Fetch the full transcript from ElevenLabs API
-    const elResponse = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(conversationId)}`,
-      {
-        headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY },
+    const { conversationId, sessionId, mode, messages: clientMessages, transcript: clientTranscript } = parsed;
+    const convId = conversationId || sessionId || `anam-${Date.now()}`;
+
+    let messages = [];
+    let transcriptText = '';
+
+    // Path 1: Client-provided messages (from Anam SDK MESSAGE_HISTORY_UPDATED)
+    if (clientMessages && Array.isArray(clientMessages) && clientMessages.length > 0) {
+      messages = clientMessages.map((m) => {
+        const text = m.content || m.message || '';
+        return {
+          role: m.role === 'agent' || m.role === 'persona' ? 'agent' : m.role === 'tool' ? 'tool' : 'user',
+          message: text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(),
+          timeInCallSecs: m.timeInCallSecs || 0,
+        };
+      });
+      transcriptText = clientTranscript
+        ? clientTranscript.replace(/<think>[\s\S]*?<\/think>/gi, '')
+        : messages
+            .filter((m) => m.role !== 'tool')
+            .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.message}`)
+            .join('\n');
+    }
+    // Path 2: Legacy ElevenLabs path — fetch transcript from ElevenLabs API
+    else if (conversationId && process.env.ELEVENLABS_API_KEY) {
+      try {
+        const elResponse = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(conversationId)}`,
+          { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY } }
+        );
+        if (elResponse.ok) {
+          const elData = await elResponse.json();
+          messages = (elData.transcript || []).map((t) => ({
+            role: t.role === 'agent' ? 'agent' : t.role === 'tool' ? 'tool' : 'user',
+            message: t.message || '',
+            timeInCallSecs: t.time_in_call_secs || 0,
+          }));
+          transcriptText = messages
+            .filter((m) => m.role !== 'tool')
+            .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.message}`)
+            .join('\n');
+        }
+      } catch (elErr) {
+        console.warn('[conversations] ElevenLabs fallback failed:', elErr.message);
       }
-    );
-
-    if (!elResponse.ok) {
-      console.error('[conversations] ElevenLabs API error:', elResponse.status);
-      return NextResponse.json(
-        { error: 'Failed to fetch conversation from ElevenLabs' },
-        { status: 502 }
-      );
     }
 
-    const elData = await elResponse.json();
-
-    const messages = (elData.transcript || []).map((t) => ({
-      role: t.role === 'agent' ? 'agent' : t.role === 'tool' ? 'tool' : 'user',
-      message: t.message || '',
-      timeInCallSecs: t.time_in_call_secs || 0,
-    }));
+    if (messages.length === 0) {
+      return NextResponse.json({ success: true, message: 'No messages to save' });
+    }
 
     // Build a summary from the conversation using Gemini
     let summary = '';
     const extractedFacts = {};
 
-    if (messages.length > 0) {
-      const transcript = messages
-        .filter((m) => m.role !== 'tool')
-        .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.message}`)
-        .join('\n');
-
+    if (messages.length > 0 && transcriptText) {
       try {
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const { GoogleGenAI } = await import('@google/genai');
+        const genAI = new GoogleGenAI({
+          apiKey: process.env.GEMINI_API_KEY,
+        });
 
-        const result = await model.generateContent(
-          `You are a memory extraction engine for a student counselling AI buddy called StudyStack.
+        const result = await genAI.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `You are a memory extraction engine for a student counselling AI buddy called StudyStack.
 Analyze this conversation transcript and produce a JSON object with exactly two keys:
 1. "summary": A concise 2-3 sentence summary of what was discussed, focusing on the student's needs, preferences, emotional state, and any decisions made.
 2. "facts": An object of key-value pairs of important facts learned about the student (e.g. name, target country, budget, test scores, concerns, preferences, mood, goals, timeline). Only include facts that were explicitly mentioned.
 
 Transcript:
-${transcript}
+${transcriptText}
 
-Respond ONLY with valid JSON, no markdown.`
-        );
+Respond ONLY with valid JSON, no markdown.`,
+        });
 
-        const text = result.response.text().trim();
-        const parsed = JSON.parse(text.replace(/```json\n?|\n?```/g, ''));
-        summary = parsed.summary || '';
-        if (parsed.facts && typeof parsed.facts === 'object') {
-          for (const [k, v] of Object.entries(parsed.facts)) {
+        const text = (result.text ?? '').trim();
+        const geminiParsed = JSON.parse(text.replace(/```json\n?|\n?```/g, ''));
+        summary = geminiParsed.summary || '';
+        if (geminiParsed.facts && typeof geminiParsed.facts === 'object') {
+          for (const [k, v] of Object.entries(geminiParsed.facts)) {
             if (typeof v === 'string' || typeof v === 'number') {
               extractedFacts[String(k)] = String(v);
             }
@@ -88,23 +108,24 @@ Respond ONLY with valid JSON, no markdown.`
       } catch (err) {
         console.error('[conversations] Summary generation failed:', err.message);
         // Fallback: simple summary
-        summary = `Conversation with ${messages.length} messages, duration ${elData.metadata?.call_duration_secs || 0}s.`;
+        summary = `Conversation with ${messages.length} messages.`;
       }
     }
 
     await dbConnect();
 
     const doc = await ConversationMemory.findOneAndUpdate(
-      { conversationId },
+      { conversationId: convId },
       {
         userId: session.user.id,
-        conversationId,
-        agentId: elData.agent_id,
+        conversationId: convId,
+        anamSessionId: sessionId || '',
         messages,
         summary,
         extractedFacts,
-        callDurationSecs: elData.metadata?.call_duration_secs || 0,
+        callDurationSecs: 0,
         mode: mode || 'buddy',
+        transcriptText,
       },
       { upsert: true, new: true }
     );
@@ -132,7 +153,7 @@ export async function GET(request) {
     const conversations = await ConversationMemory.find({ userId: session.user.id })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('conversationId summary extractedFacts callDurationSecs mode createdAt')
+      .select('conversationId anamSessionId summary extractedFacts callDurationSecs mode recordingUrl language createdAt')
       .lean();
 
     return NextResponse.json({ conversations });

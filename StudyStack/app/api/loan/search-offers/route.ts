@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import LoanApplication from '@/lib/models/LoanApplication';
 
 /* ────────────────────────────────────────────────────────────────────────────
  *  POST /api/loan/search-offers
@@ -88,6 +89,51 @@ async function exaSearch(query: string, opts: {
   } catch (e) {
     console.warn('[exa] Search error:', (e as Error).message);
     return [];
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ *  GET /api/loan/search-offers
+ *
+ *  Returns cached loan intelligence data from the database.
+ *  If no analysis exists yet, returns { cached: false } so the frontend
+ *  knows to trigger a fresh POST analysis.
+ * ──────────────────────────────────────────────────────────────────────────── */
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions as any);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+    const app = await LoanApplication.findOne({ userId: (session as any).user.id }).lean();
+
+    if (!app || !app.lastAnalyzedAt) {
+      return NextResponse.json({ cached: false });
+    }
+
+    return NextResponse.json({
+      cached: true,
+      offers: app.matchedOffers || [],
+      scholarships: app.scholarships || [],
+      analysis: app.analysis || {},
+      roiProjection: app.roiProjection || null,
+      forumInsights: app.forumInsights || [],
+      documentRequirements: app.documentChecklist || [],
+      governmentSchemes: app.governmentSchemes || [],
+      kpis: app.kpis || null,
+      sources: app.sources || [],
+      searchParams: app.searchParams || {},
+      profile: app.profileSnapshot || {},
+      lastAnalyzedAt: app.lastAnalyzedAt,
+    });
+  } catch (error) {
+    console.error('[loan-search GET] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch cached data', details: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
 
@@ -202,12 +248,10 @@ export async function POST(request: Request) {
     ];
 
     // ── 2. Feed everything into Gemini for structured analysis ────────────
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const { GoogleGenAI } = await import('@google/genai');
     const { parseJSONFromResponse } = await import('@/lib/gemini');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-pro-preview',
-      generationConfig: { temperature: 0.4, maxOutputTokens: 12000 },
+    const genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY!,
     });
 
     const sourceSummaries = allSources.map((s, i) =>
@@ -377,8 +421,12 @@ CRITICAL RULES:
 
 Respond ONLY with valid JSON. No markdown code fences.`;
 
-    const result = await model.generateContent(geminiPrompt);
-    const text = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: geminiPrompt,
+      config: { temperature: 0.4, maxOutputTokens: 12000 },
+    });
+    const text = (result.text ?? '').trim();
 
     let analysis;
     try {
@@ -451,31 +499,66 @@ Respond ONLY with valid JSON. No markdown code fences.`;
       riskScore: aiRiskScore,
     };
 
-    // Save to DB so document-checklist and offers API can access them
-    const { default: LoanApplication } = await import('@/lib/models/LoanApplication');
-    const existingApp = await LoanApplication.findOne({ userId: session.user.id });
+    // ── 4. Build the full response payload ─────────────────────────────
+    const sourcesCompact = allSources.map(s => ({
+      title: s.title,
+      url: s.url,
+      sourceType: s.sourceType,
+      favicon: s.favicon,
+    }));
+
+    const profileSnapshot = {
+      targetCountry: p.targetCountry,
+      courseInterest: p.courseInterest,
+      budget: p.budget,
+      universityName: p.universityName,
+      gpa: p.gpa,
+      testScore: p.testScore,
+    };
+
+    const docChecklist = (analysis.documentRequirements || []).map((req: any) => ({
+      name: req.name,
+      required: req.required,
+      status: 'pending',
+      lenders: req.applicableLenders || [],
+    }));
+
+    // ── 5. Persist ALL intelligence data to DB ────────────────────────
+    const updatePayload: Record<string, any> = {
+      userId: (session as any).user.id,
+      matchedOffers: offers,
+      kpis,
+      analysis: analysis.analysis || {},
+      roiProjection: analysis.roiProjection || null,
+      scholarships: analysis.scholarships || [],
+      forumInsights: analysis.forumInsights || [],
+      governmentSchemes: analysis.governmentSchemes || [],
+      searchParams: p,
+      sources: sourcesCompact,
+      profileSnapshot,
+      lastAnalyzedAt: new Date(),
+    };
+
+    const existingApp = await LoanApplication.findOne({ userId: (session as any).user.id });
     if (existingApp) {
-      existingApp.matchedOffers = offers;
+      Object.assign(existingApp, updatePayload);
+      // Only reset document checklist if it was empty
       if (!existingApp.documentChecklist || existingApp.documentChecklist.length === 0) {
-         // Initialize from AI
-         existingApp.documentChecklist = (analysis.documentRequirements || []).map((req: any) => ({
-           name: req.name,
-           required: req.required,
-           status: 'pending',
-           lenders: req.applicableLenders || [],
-         }));
+        existingApp.documentChecklist = docChecklist;
       }
+      existingApp.markModified('kpis');
+      existingApp.markModified('analysis');
+      existingApp.markModified('scholarships');
+      existingApp.markModified('forumInsights');
+      existingApp.markModified('governmentSchemes');
+      existingApp.markModified('searchParams');
+      existingApp.markModified('sources');
+      existingApp.markModified('profileSnapshot');
       await existingApp.save();
     } else {
       await LoanApplication.create({
-        userId: session.user.id,
-        matchedOffers: offers,
-        documentChecklist: (analysis.documentRequirements || []).map((req: any) => ({
-           name: req.name,
-           required: req.required,
-           status: 'pending',
-           lenders: req.applicableLenders || [],
-         }))
+        ...updatePayload,
+        documentChecklist: docChecklist,
       });
     }
 
@@ -488,21 +571,10 @@ Respond ONLY with valid JSON. No markdown code fences.`;
       documentRequirements: analysis.documentRequirements || [],
       governmentSchemes: analysis.governmentSchemes || [],
       kpis,
-      sources: allSources.map(s => ({
-        title: s.title,
-        url: s.url,
-        sourceType: s.sourceType,
-        favicon: s.favicon,
-      })),
+      sources: sourcesCompact,
       searchParams: p,
-      profile: {
-        targetCountry: p.targetCountry,
-        courseInterest: p.courseInterest,
-        budget: p.budget,
-        universityName: p.universityName,
-        gpa: p.gpa,
-        testScore: p.testScore,
-      },
+      profile: profileSnapshot,
+      lastAnalyzedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error('[loan-search] Error:', error);

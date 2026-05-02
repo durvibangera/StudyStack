@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import crypto from "crypto";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import dbConnect from "@/lib/mongodb";
 import User from "@/lib/models/User";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 const INCOMPLETE_TEST_PATTERNS = [
   /not\s*started/i,
@@ -520,29 +522,29 @@ export async function POST(request) {
       let text;
 
       try {
-        const groundedModel = genAI.getGenerativeModel({
+        const result = await genAI.models.generateContent({
           model: "gemini-2.5-pro",
-          generationConfig: {
+          contents: prompt,
+          config: {
             temperature: 0.85,
             topP: 0.95,
             maxOutputTokens: 8192,
+            tools: [{ googleSearch: {} }],
           },
-          tools: [{ googleSearch: {} }],
         });
-        const result = await groundedModel.generateContent(prompt);
-        text = result.response.text();
+        text = result.text;
       } catch (groundingErr) {
         console.warn("[Dashboard Analyze] Grounding failed, falling back to plain generation:", groundingErr.message);
-        const plainModel = genAI.getGenerativeModel({
+        const result = await genAI.models.generateContent({
           model: "gemini-2.5-pro",
-          generationConfig: {
+          contents: prompt,
+          config: {
             temperature: 0.85,
             topP: 0.95,
             maxOutputTokens: 8192,
           },
         });
-        const result = await plainModel.generateContent(prompt);
-        text = result.response.text();
+        text = result.text;
       }
 
       const aiAnalysis = extractJSON(text);

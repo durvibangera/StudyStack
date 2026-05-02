@@ -78,11 +78,9 @@ export async function POST(request: Request) {
     const salaryResults = await searchSalaryData(country, field, university);
 
     // Use Gemini to extract structured salary/ROI from search results
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: { temperature: 0.3, maxOutputTokens: 2000 },
+    const { GoogleGenAI } = await import('@google/genai');
+    const genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY!,
     });
 
     const searchContext = salaryResults.map((r: any, i: number) =>
@@ -115,8 +113,12 @@ Return ONLY valid JSON (no code fences):
 
 Use realistic numbers based on the search data. Convert foreign currencies to INR at current rates.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { temperature: 0.3, maxOutputTokens: 2000 },
+    });
+    const text = (result.text ?? '').trim();
 
     let roiProjection;
     try {

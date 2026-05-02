@@ -35,37 +35,62 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const conversationId = body.conversationId || await resolveLatestConversationId();
-    if (!conversationId) {
-      return NextResponse.json({ error: 'Could not determine conversation to extract' }, { status: 400 });
+
+    // Accept transcript from client-side Anam SDK (or legacy ElevenLabs conversationId)
+    let transcript = '';
+    let rawMessages = [];
+    const sessionId = body.sessionId || `anam-${Date.now()}`;
+
+    if (body.transcript && typeof body.transcript === 'string') {
+      // Pre-formatted transcript string from client
+      transcript = body.transcript.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    } else if (body.messages && Array.isArray(body.messages)) {
+      // Message array from Anam SDK MESSAGE_HISTORY_UPDATED
+      rawMessages = body.messages.map((m) => {
+        const text = m.content || m.message || '';
+        return {
+          role: m.role === 'agent' || m.role === 'persona' ? 'agent' : m.role === 'tool' ? 'tool' : 'user',
+          message: text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(),
+          timeInCallSecs: m.timeInCallSecs || 0,
+        };
+      });
+      transcript = rawMessages
+        .filter((m) => m.role !== 'tool')
+        .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.message}`)
+        .join('\n');
+    } else if (body.conversationId) {
+      // Legacy ElevenLabs path — try to fetch transcript from ElevenLabs API
+      try {
+        const elResponse = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(body.conversationId)}`,
+          { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY } }
+        );
+        if (elResponse.ok) {
+          const elData = await elResponse.json();
+          rawMessages = (elData.transcript || []).map((t) => ({
+            role: t.role === 'agent' ? 'agent' : t.role === 'tool' ? 'tool' : 'user',
+            message: t.message || '',
+            timeInCallSecs: t.time_in_call_secs || 0,
+          }));
+          transcript = rawMessages
+            .filter((m) => m.role !== 'tool')
+            .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.message}`)
+            .join('\n');
+        }
+      } catch (elErr) {
+        console.warn('[extract-kyc] ElevenLabs fallback failed:', elErr.message);
+      }
     }
-
-    // 1. Fetch transcript from ElevenLabs
-    const elResponse = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(conversationId)}`,
-      { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY } }
-    );
-
-    if (!elResponse.ok) {
-      console.error('[extract-kyc] ElevenLabs API error:', elResponse.status);
-      return NextResponse.json({ error: 'Failed to fetch conversation' }, { status: 502 });
-    }
-
-    const elData = await elResponse.json();
-    const transcriptEntries = (elData.transcript || [])
-      .filter((t) => t.role !== 'tool')
-    const transcript = transcriptEntries
-      .map((t) => `${t.role === 'user' ? 'Student' : 'Agent'}: ${t.message || ''}`)
-      .join('\n');
 
     if (!transcript.trim()) {
       return NextResponse.json({ success: true, partial: true, message: 'Conversation saved (no data to extract)' });
     }
 
     // 2. Use Gemini to extract structured counselling data
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const { GoogleGenAI } = await import('@google/genai');
+    const genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
 
     const prompt = `You are a precise extraction engine for an overseas education counselling call.
 
@@ -101,8 +126,11 @@ ${transcript}
 
 Respond ONLY with valid JSON.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    const text = (result.text ?? '').trim();
     let extracted;
     try {
       extracted = JSON.parse(text.replace(/```json\n?|\n?```/g, ''));
@@ -122,7 +150,7 @@ Respond ONLY with valid JSON.`;
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const existingProfile = user.studentProfile?.toObject?.() || {};
+    const existingProfile = (user.studentProfile?.toObject ? user.studentProfile.toObject() : user.studentProfile) || {};
     const { mergedProfile } = mergeCounsellingProfile(existingProfile, profilePatch);
     const counsellingProgress = buildCounsellingProgress(mergedProfile);
     const isComplete = user.hasCompletedKYC || counsellingProgress.isComplete;
@@ -138,14 +166,18 @@ Respond ONLY with valid JSON.`;
     );
 
     // Save transcript to ConversationMemory so future sessions have context.
-    // This avoids a separate /api/voice-agent/conversations fetch (which would
-    // call the ElevenLabs transcript endpoint a second time for the same convo).
     try {
-      const rawMessages = (elData.transcript || []).map((t) => ({
-        role: t.role === 'agent' ? 'agent' : t.role === 'tool' ? 'tool' : 'user',
-        message: t.message || '',
-        timeInCallSecs: t.time_in_call_secs || 0,
-      }));
+      if (rawMessages.length === 0 && transcript) {
+        // Build rawMessages from transcript string
+        rawMessages = transcript.split('\n').map((line) => {
+          const isStudent = line.startsWith('Student:');
+          return {
+            role: isStudent ? 'user' : 'agent',
+            message: line.replace(/^(Student|Agent):\s*/, ''),
+            timeInCallSecs: 0,
+          };
+        });
+      }
 
       const kycFacts = buildCounsellingFactMap(mergedProfile);
 
@@ -153,22 +185,22 @@ Respond ONLY with valid JSON.`;
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ');
 
-      const summary = elData.analysis?.transcript_summary
-        || `Counselling onboarding — ${
-          counsellingProgress.isComplete ? 'all required counselling fields were collected' : 'partial counselling profile collected'
-        }. ${profileLine}`.trim();
+      const summary = `Counselling onboarding — ${
+        counsellingProgress.isComplete ? 'all required counselling fields were collected' : 'partial counselling profile collected'
+      }. ${profileLine}`.trim();
 
       await ConversationMemory.findOneAndUpdate(
-        { conversationId },
+        { conversationId: sessionId },
         {
           userId: session.user.id,
-          conversationId,
-          agentId: elData.agent_id,
+          conversationId: sessionId,
+          anamSessionId: body.sessionId || '',
           messages: rawMessages,
           summary,
           extractedFacts: kycFacts,
-          callDurationSecs: elData.metadata?.call_duration_secs || 0,
+          callDurationSecs: 0,
           mode: 'onboarding',
+          transcriptText: transcript,
         },
         { upsert: true, new: true }
       );
@@ -193,24 +225,5 @@ Respond ONLY with valid JSON.`;
       { error: 'Failed to extract and save profile' },
       { status: 500 }
     );
-  }
-}
-
-async function resolveLatestConversationId() {
-  try {
-    const listUrl = new URL('https://api.elevenlabs.io/v1/convai/conversations');
-    listUrl.searchParams.set('agent_id', process.env.ELEVENLABS_AGENT_ID || 'agent_6301kncrnakkft1seqw159q12j6b');
-    listUrl.searchParams.set('page_size', '1');
-
-    const response = await fetch(listUrl.toString(), {
-      headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY },
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    return data?.conversations?.[0]?.conversation_id || null;
-  } catch {
-    return null;
   }
 }

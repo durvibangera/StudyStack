@@ -1,51 +1,53 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY is not defined in environment variables');
 }
 
-// Initialize the Gemini API client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize the Gemini client via @google/genai
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 // Reasoning/strategy: Gemini 3.1 Pro Preview with balanced tokens
 export const getReasoningModel = () => {
-  return genAI.getGenerativeModel({
-    model: 'gemini-3.1-pro-preview',
-    generationConfig: {
+  return {
+    modelName: 'gemini-3.1-pro-preview',
+    config: {
       temperature: 0.8,
       topP: 0.95,
       maxOutputTokens: 6000, // Balanced for quality and speed
     },
-  });
+  };
 };
 
 // General text: Gemini 2.5 Flash for campaign node execution
 export const getFlashModel = () => {
-  return genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    generationConfig: {
+  return {
+    modelName: 'gemini-2.5-flash',
+    config: {
       temperature: 0.95,
       topP: 0.95,
       maxOutputTokens: 8192,
     },
-  });
+  };
 };
 
 // Image generation: Gemini 2.5 Flash Image (returns base64 images)
 export const getImageModel = () => {
-  return genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-image',
-    generationConfig: {
+  return {
+    modelName: 'gemini-2.5-flash-image',
+    config: {
       temperature: 1.1,
       topP: 0.95,
       maxOutputTokens: 2048,
     },
-  });
+  };
 };
 
 // Helper to generate content with retry logic
 export async function generateWithRetry(
-  model: any,
+  modelSpec: { modelName: string; config?: Record<string, any> },
   prompt: string,
   maxRetries = 5
 ): Promise<string> {
@@ -53,9 +55,12 @@ export async function generateWithRetry(
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const result = await genAI.models.generateContent({
+        model: modelSpec.modelName,
+        contents: prompt,
+        config: modelSpec.config,
+      });
+      return result.text ?? '';
     } catch (error) {
       lastError = error as Error;
       console.error(`Attempt ${i + 1} failed:`, error);

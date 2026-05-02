@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import dynamic from 'next/dynamic';
 import StaggeredMenu from '@/components/StaggeredMenu';
 const AICounsellingDashboard = dynamic(() => import('@/components/AICounsellingDashboard'), { ssr: false, loading: () => null });
-const ElevenLabsVoiceAgent = dynamic(() => import('@/components/ElevenLabsVoiceAgent'), { ssr: false });
+const AnamVoiceAgent = dynamic(() => import('@/components/AnamVoiceAgent'), { ssr: false });
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -642,7 +642,7 @@ export default function OnboardingPage() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <ElevenLabsVoiceAgent
+              <AnamVoiceAgent
                 mode="onboarding"
                 onComplete={() => {
                   setVoiceMode(false);

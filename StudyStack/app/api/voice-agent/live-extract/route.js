@@ -47,49 +47,59 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { conversationId, lastLineCount } = await request.json();
+    const { conversationId, sessionId, lastLineCount, transcript: clientTranscript } = await request.json();
 
-    const resolvedConversationId = conversationId || await resolveLatestConversationId();
-    if (!resolvedConversationId) {
-      return NextResponse.json({ fields: [], lineCount: 0, waiting: true });
+    const resolvedConversationId = conversationId || sessionId || `anam-${Date.now()}`;
+
+    let transcript = '';
+    let lineCount = 0;
+
+    if (clientTranscript && typeof clientTranscript === 'string') {
+      // Anam SDK client-side transcript
+      transcript = clientTranscript;
+      lineCount = transcript.split('\n').filter((l) => l.trim().length > 0).length;
+    } else if (conversationId) {
+      // Legacy ElevenLabs path
+      try {
+        const elResponse = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(conversationId)}`,
+          { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY } }
+        );
+        if (elResponse.ok) {
+          const elData = await elResponse.json();
+          const rawTranscript = (elData.transcript || []).filter((t) => t.role !== 'tool');
+          transcript = rawTranscript
+            .map((t) => `${t.role === 'user' ? 'Student' : 'Agent'}: ${t.message || ''}`)
+            .join('\n');
+          lineCount = rawTranscript.length;
+        }
+      } catch (err) {
+        // Fallback silently
+      }
     }
-
-    // 1. Fetch current transcript from ElevenLabs
-    const elResponse = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(resolvedConversationId)}`,
-      { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY } }
-    );
-
-    if (!elResponse.ok) {
-      // Transcript may not be available yet — not an error
-      return NextResponse.json({ fields: [], lineCount: 0, conversationId: resolvedConversationId });
-    }
-
-    const elData = await elResponse.json();
-    const rawTranscript = (elData.transcript || []).filter((t) => t.role !== 'tool');
 
     // Skip if transcript hasn't grown since last extraction
-    if (rawTranscript.length <= (lastLineCount || 0)) {
+    if (!transcript || lineCount <= (lastLineCount || 0)) {
       return NextResponse.json({
         fields: [],
-        lineCount: rawTranscript.length,
+        lineCount: lineCount,
         skipped: true,
         conversationId: resolvedConversationId,
       });
     }
 
-    const transcript = rawTranscript
-      .map((t) => `${t.role === 'user' ? 'Student' : 'Agent'}: ${t.message || ''}`)
-      .join('\n');
-
     if (!transcript.trim()) {
       return NextResponse.json({ fields: [], lineCount: 0, conversationId: resolvedConversationId });
     }
 
+    // Strip <think> tags before extracting
+    const cleanTranscript = transcript.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
     // 2. Lightweight Gemini extraction
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const { GoogleGenAI } = await import('@google/genai');
+    const genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
 
     const prompt = `You are extracting structured student facts from an ongoing overseas education counselling call.
 
@@ -109,17 +119,20 @@ export async function POST(request) {
   - Do not output placeholder text like "unknown" or "not provided".
 
   Transcript:
-  ${transcript}
+  ${cleanTranscript}
 
   Respond ONLY with valid JSON.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    const text = (result.text ?? '').trim();
     let extracted;
     try {
       extracted = JSON.parse(text.replace(/```json\n?|\n?```/g, ''));
     } catch {
-      return NextResponse.json({ fields: [], lineCount: rawTranscript.length, error: 'parse' });
+      return NextResponse.json({ fields: [], lineCount, error: 'parse' });
     }
 
     const validFields = normalizeCounsellingProfilePatch(extracted);
@@ -128,10 +141,10 @@ export async function POST(request) {
     await dbConnect();
     const user = await User.findById(session.user.id);
     if (!user) {
-      return NextResponse.json({ fields: [], lineCount: rawTranscript.length, conversationId: resolvedConversationId });
+      return NextResponse.json({ fields: [], lineCount, conversationId: resolvedConversationId });
     }
 
-    const existing = user.studentProfile?.toObject?.() || {};
+    const existing = (user.studentProfile?.toObject ? user.studentProfile.toObject() : user.studentProfile) || {};
     const { mergedProfile, changedFields, newFields } = mergeCounsellingProfile(existing, validFields);
 
     if (changedFields.length > 0) {
@@ -143,39 +156,47 @@ export async function POST(request) {
       }, { runValidators: false });
     }
 
-    const rawMessages = (elData.transcript || []).map((entry) => ({
-      role: entry.role === 'agent' ? 'agent' : entry.role === 'tool' ? 'tool' : 'user',
-      message: entry.message || '',
-      timeInCallSecs: entry.time_in_call_secs || 0,
-    }));
+    // Save a snapshot of the live transcript
+    try {
+      const rawMessages = cleanTranscript.split('\n').map((line) => {
+        const isStudent = line.startsWith('Student:');
+        return {
+          role: isStudent ? 'user' : 'agent',
+          message: line.replace(/^(Student|Agent):\s*/, ''),
+          timeInCallSecs: 0,
+        };
+      });
 
-    const liveProfile = changedFields.length > 0 ? mergedProfile : existing;
-    const counsellingProgress = buildCounsellingProgress(liveProfile);
-    const extractedFacts = buildCounsellingFactMap(liveProfile);
-    const summary = `Live counselling capture — ${counsellingProgress.filledCount}/${counsellingProgress.totalCount} fields recorded.`;
+      const liveProfile = changedFields.length > 0 ? mergedProfile : existing;
+      const counsellingProgress = buildCounsellingProgress(liveProfile);
+      const extractedFacts = buildCounsellingFactMap(liveProfile);
+      const summary = `Live counselling capture — ${counsellingProgress.filledCount}/${counsellingProgress.totalCount} fields recorded.`;
 
-    await ConversationMemory.findOneAndUpdate(
-      { conversationId: resolvedConversationId },
-      {
-        userId: session.user.id,
-        conversationId: resolvedConversationId,
-        agentId: elData.agent_id,
-        messages: rawMessages,
-        summary,
-        extractedFacts,
-        callDurationSecs: elData.metadata?.call_duration_secs || 0,
-        mode: 'onboarding',
-      },
-      { upsert: true, new: true }
-    );
-
+      await ConversationMemory.findOneAndUpdate(
+        { conversationId: resolvedConversationId },
+        {
+          userId: session.user.id,
+          conversationId: resolvedConversationId,
+          anamSessionId: sessionId || '',
+          messages: rawMessages,
+          summary,
+          extractedFacts,
+          callDurationSecs: 0,
+          mode: 'onboarding',
+          transcriptText: cleanTranscript,
+        },
+        { upsert: true, new: true }
+      );
+    } catch (memErr) {
+      // non-fatal
+    }
 
     return NextResponse.json({
       fields: Object.keys(validFields),
       newFields,
       changedFields,
-      lineCount: rawTranscript.length,
-      counsellingProgress,
+      lineCount,
+      counsellingProgress: buildCounsellingProgress(changedFields.length > 0 ? mergedProfile : existing),
       transcriptUpdated: true,
       conversationId: resolvedConversationId,
     });
@@ -184,19 +205,4 @@ export async function POST(request) {
     // Non-fatal — return empty fields so the interval continues
     return NextResponse.json({ fields: [], lineCount: 0 });
   }
-}
-
-async function resolveLatestConversationId() {
-  const listUrl = new URL('https://api.elevenlabs.io/v1/convai/conversations');
-  listUrl.searchParams.set('agent_id', process.env.ELEVENLABS_AGENT_ID || 'agent_6301kncrnakkft1seqw159q12j6b');
-  listUrl.searchParams.set('page_size', '1');
-
-  const response = await fetch(listUrl.toString(), {
-    headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY },
-  });
-
-  if (!response.ok) return null;
-
-  const data = await response.json();
-  return data?.conversations?.[0]?.conversation_id || null;
 }

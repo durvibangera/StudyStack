@@ -75,11 +75,35 @@ function KPICard({ label, value, subtext, color }: { label: string; value: strin
 export default function LoanPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'comparison' | 'settings'>('dashboard');
 
-  const fetchLoanData = async (params = {}) => {
+  // Load cached data from DB (fast, no AI calls)
+  const loadCachedData = async () => {
     setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/loan/search-offers');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      if (d.cached) {
+        setData(d);
+      } else {
+        // No cached data — run the first analysis automatically
+        await generateAnalysis();
+        return;
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate fresh analysis (expensive: Exa + Gemini)
+  const generateAnalysis = async (params = {}) => {
+    setGenerating(true);
     setError(null);
     try {
       const res = await fetch('/api/loan/search-offers', {
@@ -96,12 +120,13 @@ export default function LoanPage() {
     } catch (err) {
       setError((err as Error).message);
     } finally {
+      setGenerating(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLoanData();
+    loadCachedData();
   }, []);
 
   const offers = data?.offers || [];
@@ -123,6 +148,11 @@ export default function LoanPage() {
             <p className="ivy-font mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               A dynamic, living system powered by Exa AI & Gemini. Evaluates your profile, predicts ROI, and finds the best loan offers in real-time.
             </p>
+            {data?.lastAnalyzedAt && (
+              <p className="ivy-font mt-1 text-xs text-muted-foreground/70">
+                Last analyzed: {new Date(data.lastAnalyzedAt).toLocaleString()}
+              </p>
+            )}
             {profileContext && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {profileContext.targetCountry && (
@@ -143,6 +173,26 @@ export default function LoanPage() {
               </div>
             )}
           </div>
+          <button
+            onClick={() => generateAnalysis(data?.searchParams || {})}
+            disabled={generating}
+            className={`ivy-font flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${
+              generating
+                ? 'bg-muted/20 text-muted-foreground cursor-not-allowed'
+                : 'bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 border border-emerald-500/30'
+            }`}
+          >
+            {generating ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                Generating...
+              </>
+            ) : (
+              <>
+                ↻ {data ? 'Refresh Analysis' : 'Generate Analysis'}
+              </>
+            )}
+          </button>
         </div>
 
         {/* Tab Navigation */}
@@ -167,28 +217,35 @@ export default function LoanPage() {
           ))}
         </div>
 
-        {/* Loading State */}
-        {loading && (
+        {/* Loading / Generating State */}
+        {(loading || generating) && (
           <div className="rounded-2xl border border-border/40 bg-card/80 p-12 backdrop-blur-sm flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent mb-4" />
-            <h3 className="text-lg font-bold text-foreground">Analyzing your profile...</h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-sm">Exa AI is scanning official sites, forums, and salary databases to build your personalized loan strategy.</p>
+            <h3 className="text-lg font-bold text-foreground">
+              {generating ? 'Generating fresh analysis...' : 'Loading saved data...'}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-sm">
+              {generating
+                ? 'Exa AI is scanning official sites, forums, and salary databases to build your personalized loan strategy.'
+                : 'Fetching your saved loan intelligence data.'
+              }
+            </p>
           </div>
         )}
 
         {/* Error State */}
-        {error && !loading && (
+        {error && !loading && !generating && (
           <div className="rounded-2xl border border-rose-500/40 bg-rose-500/5 p-8">
             <h3 className="text-lg font-bold text-rose-500">Analysis Failed</h3>
             <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-            <button onClick={() => fetchLoanData()} className="mt-4 rounded-lg bg-rose-500/20 px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-500/30">
+            <button onClick={() => generateAnalysis()} className="mt-4 rounded-lg bg-rose-500/20 px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-500/30">
               Try Again
             </button>
           </div>
         )}
 
         {/* Content Tabs */}
-        {!loading && !error && data && (
+        {!loading && !generating && !error && data && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             
             {/* Dashboard Tab */}
@@ -343,7 +400,7 @@ export default function LoanPage() {
             {activeTab === 'settings' && (
               <LoanSettings 
                 initialParams={data.searchParams} 
-                onSave={(params) => fetchLoanData(params)} 
+                onSave={(params) => generateAnalysis(params)} 
               />
             )}
 

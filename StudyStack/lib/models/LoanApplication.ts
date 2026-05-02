@@ -37,7 +37,13 @@ export interface IROIProjection {
   estimatedLivingCostINR: number;
   totalCostINR: number;
   expectedSalaryYear1INR: number;
+  expectedSalaryYear3INR?: number;
+  expectedSalaryYear5INR?: number;
   paybackPeriodMonths: number;
+  roiPercentage?: number;
+  salarySourceUrls?: string[];
+  salaryNotes?: string;
+  currencyConversionNote?: string;
 }
 
 export interface IScoreBreakdown {
@@ -61,6 +67,16 @@ export interface ILoanApplication extends Document {
   documentChecklist: IDocumentItem[];
   applicationStatus: 'not_started' | 'docs_pending' | 'submitted' | 'under_review' | 'approved' | 'disbursed';
   selectedLender: string | null;
+  // Persisted loan intelligence data
+  kpis: Record<string, any> | null;
+  analysis: Record<string, any> | null;
+  scholarships: Record<string, any>[] | null;
+  forumInsights: Record<string, any>[] | null;
+  governmentSchemes: Record<string, any>[] | null;
+  searchParams: Record<string, any> | null;
+  sources: Record<string, any>[] | null;
+  profileSnapshot: Record<string, any> | null;
+  lastAnalyzedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -136,7 +152,17 @@ const LoanApplicationSchema = new Schema<ILoanApplication>({
     enum: ['not_started', 'docs_pending', 'submitted', 'under_review', 'approved', 'disbursed'],
     default: 'not_started',
   },
-  selectedLender: { type: String, default: null },
+  selectedLender:       { type: String, default: null },
+  // Persisted loan intelligence data
+  kpis:                 { type: Schema.Types.Mixed, default: null },
+  analysis:             { type: Schema.Types.Mixed, default: null },
+  scholarships:         { type: [Schema.Types.Mixed], default: null },
+  forumInsights:        { type: [Schema.Types.Mixed], default: null },
+  governmentSchemes:    { type: [Schema.Types.Mixed], default: null },
+  searchParams:         { type: Schema.Types.Mixed, default: null },
+  sources:              { type: [Schema.Types.Mixed], default: null },
+  profileSnapshot:      { type: Schema.Types.Mixed, default: null },
+  lastAnalyzedAt:       { type: Date, default: null },
 }, {
   timestamps: true,
 });

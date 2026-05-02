@@ -4,7 +4,7 @@ import Booking from '@/lib/models/Booking';
 import CounsellorSession from '@/lib/models/CounsellorSession';
 import WhatsAppState from '@/lib/models/WhatsAppState';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/sendMessage';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import {
   COUNSELLING_FIELDS,
   buildCounsellingProgress,
@@ -12,7 +12,9 @@ import {
   isMeaningfulCounsellingValue,
 } from '@/lib/counselling-profile';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY || '',
+});
 
 const COUNSELLOR_PHONE = process.env.COUNSELLOR_WHATSAPP_NUMBER || '';
 
@@ -37,11 +39,11 @@ async function detectIntent(message) {
 
   // Fallback to Gemini for ambiguous messages
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(
-      `Classify this WhatsApp message from a student to a study-abroad counselling service into one of these intents: schedule_booking, cancel_booking, status_check, general.\n\nMessage: "${message}"\n\nReply with ONLY the intent label, nothing else.`
-    );
-    const intent = result.response.text().trim().toLowerCase();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Classify this WhatsApp message from a student to a study-abroad counselling service into one of these intents: schedule_booking, cancel_booking, status_check, general.\n\nMessage: "${message}"\n\nReply with ONLY the intent label, nothing else.`,
+    });
+    const intent = (result.text ?? '').trim().toLowerCase();
     if (['schedule_booking', 'cancel_booking', 'status_check', 'general'].includes(intent)) {
       return intent;
     }
@@ -60,12 +62,12 @@ async function parseDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const today = new Date().toISOString().split('T')[0];
-    const result = await model.generateContent(
-      `Today is ${today}. Convert these into an ISO 8601 datetime string (UTC+5:30 IST):\nDate: "${dateStr}"\nTime: "${timeStr}"\n\nReply with ONLY the ISO string like "2026-04-10T10:00:00+05:30", nothing else. If you cannot parse, reply "null".`
-    );
-    const iso = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Today is ${today}. Convert these into an ISO 8601 datetime string (UTC+5:30 IST):\nDate: "${dateStr}"\nTime: "${timeStr}"\n\nReply with ONLY the ISO string like "2026-04-10T10:00:00+05:30", nothing else. If you cannot parse, reply "null".`,
+    });
+    const iso = (result.text ?? '').trim();
     if (iso === 'null') return null;
     const d = new Date(iso);
     return isNaN(d.getTime()) ? null : d;
@@ -191,9 +193,9 @@ async function buildStudentContext(user, phoneNumber) {
  */
 async function generateContextReply(messageText, studentContext, studentName) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(
-      `You are StudyStack's WhatsApp counselling assistant — a warm, professional study-abroad advisor.
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `You are StudyStack's WhatsApp counselling assistant — a warm, professional study-abroad advisor.
 
 You have the following information about this student:
 
@@ -209,9 +211,9 @@ Instructions:
 - Always mention that they can type *schedule* to book a 1:1 counselling session.
 - Keep the reply under 200 words.
 - Do NOT make up information not present in the profile.
-- Format for WhatsApp (no markdown headers, use *bold* and bullet points with •).`
-    );
-    return result.response.text().trim();
+- Format for WhatsApp (no markdown headers, use *bold* and bullet points with •).`,
+    });
+    return (result.text ?? '').trim();
   } catch (err) {
     console.error('[whatsapp-incoming] Gemini context reply failed:', err);
     return null;

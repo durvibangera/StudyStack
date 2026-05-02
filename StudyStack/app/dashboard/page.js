@@ -18,7 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const ElevenLabsVoiceAgent = dynamic(() => import('@/components/ElevenLabsVoiceAgent'), { ssr: false });
+const AnamVoiceAgent = dynamic(() => import('@/components/AnamVoiceAgent'), { ssr: false });
 const CounsellingSidebarCard = dynamic(() => import('@/components/CounsellingSidebarCard'), { ssr: false, loading: () => null });
 const StudentProfileCard = dynamic(() => import('@/components/StudentProfileCard'), { ssr: false });
 
@@ -207,7 +207,7 @@ export default function Dashboard() {
                 Student Dashboard
               </h1>
               <p className="ivy-font max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                Live counselling data from ElevenLabs, persisted in MongoDB and ready to resume when anything is still missing.
+                Live counselling data from Anam AI, persisted in MongoDB and ready to resume when anything is still missing.
               </p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function Dashboard() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <ElevenLabsVoiceAgent
+              <AnamVoiceAgent
                 mode="onboarding"
                 onComplete={handleVoiceComplete}
                 sessionMemory={preparedVoiceSession}
@@ -465,7 +465,7 @@ export default function Dashboard() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <ElevenLabsVoiceAgent
+              <AnamVoiceAgent
                 mode="onboarding"
                 onComplete={handleVoiceComplete}
               />

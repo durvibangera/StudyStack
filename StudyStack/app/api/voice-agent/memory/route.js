@@ -226,9 +226,10 @@ async function buildResumePlan({
     return fallbackResumePlan;
   }
 
-  const { GoogleGenerativeAI } = await import('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const { GoogleGenAI } = await import('@google/genai');
+  const genAI = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
 
   const prompt = `You are preparing a resumed overseas education counselling voice call.
 
@@ -268,8 +269,11 @@ ${Object.keys(allFacts).length > 0 ? JSON.stringify(allFacts, null, 2) : 'None'}
 Respond ONLY with valid JSON.`;
 
   try {
-    const result = await model.generateContent(prompt);
-    const rawText = result.response.text().trim();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    const rawText = (result.text ?? '').trim();
     const parsed = JSON.parse(rawText.replace(/```json\n?|\n?```/g, ''));
     return sanitizeResumePlan(parsed, fallbackResumePlan, counsellingProgress);
   } catch (error) {
