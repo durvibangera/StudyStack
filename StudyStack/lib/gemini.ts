@@ -7,10 +7,10 @@ if (!process.env.GEMINI_API_KEY) {
 // Initialize the Gemini API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Reasoning/strategy: Gemini 2.5 Pro with balanced tokens
+// Reasoning/strategy: Gemini 3.1 Pro Preview with balanced tokens
 export const getReasoningModel = () => {
   return genAI.getGenerativeModel({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.1-pro-preview',
     generationConfig: {
       temperature: 0.8,
       topP: 0.95,
@@ -19,10 +19,10 @@ export const getReasoningModel = () => {
   });
 };
 
-// General text: Gemini 2.5 Pro for campaign node execution
+// General text: Gemini 2.5 Flash for campaign node execution
 export const getFlashModel = () => {
   return genAI.getGenerativeModel({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       temperature: 0.95,
       topP: 0.95,
@@ -47,7 +47,7 @@ export const getImageModel = () => {
 export async function generateWithRetry(
   model: any,
   prompt: string,
-  maxRetries = 3
+  maxRetries = 5
 ): Promise<string> {
   let lastError: Error | null = null;
 
@@ -62,7 +62,7 @@ export async function generateWithRetry(
       
       // Wait before retrying (exponential backoff)
       if (i < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 2000));
       }
     }
   }
