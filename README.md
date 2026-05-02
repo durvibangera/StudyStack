@@ -1,653 +1,565 @@
-# StudyStack — AI-Native Student Engagement & Education Financing Platform
-### Solution Deck | Hackathon Submission
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react" />
+  <img src="https://img.shields.io/badge/Gemini-2.5_Pro-4285F4?style=for-the-badge&logo=google" />
+  <img src="https://img.shields.io/badge/ElevenLabs-Voice_AI-000?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/MongoDB-9.0-47A248?style=for-the-badge&logo=mongodb" />
+  <img src="https://img.shields.io/badge/Tailwind-v4-06B6D4?style=for-the-badge&logo=tailwindcss" />
+</p>
+
+<h1 align="center">📚 StudyStack</h1>
+<h3 align="center"><em>Your AI Co-Pilot from Dream to Degree — and the Loan to Get There</em></h3>
+
+<p align="center">
+  An AI-native student engagement & education financing platform that replaces 10+ fragmented touchpoints with one intelligent ecosystem — from discovery to loan approval.
+</p>
 
 ---
 
-## SLIDE 1 — IDEA TITLE & PROPOSED SOLUTION
+## 🧭 Table of Contents
 
-**Platform Name:** StudyStack (powered by GradPilot)
-**Tagline:** *"Your AI co-pilot from dream to degree — and the loan to get there."*
-
-### What Is StudyStack?
-
-StudyStack is a full-stack, AI-native engagement platform built for Indian students planning postgraduate education — both abroad (US, UK, Canada, Europe, Australia) and domestically (IIMs, ISB, top private universities). It functions as a unified ecosystem that guides a student from initial exploration all the way to an approved education loan application, with zero hand-holding required from human agents unless the student explicitly wants it.
-
-The platform sits at the intersection of three underserved spaces:
-1. **Discovery & Planning** — students don't know where to start
-2. **Engagement & Trust** — students drop off without continuous value
-3. **Financing** — loan awareness and application is fragmented, opaque, and intimidating
-
-StudyStack addresses all three in a single product experience, powered by a constellation of AI models, voice agents, agentic workflows, and multichannel execution engines.
-
-### How It Addresses the Problem
-
-The problem statement calls for a platform that acts like SoFi for students — a sticky, AI-led ecosystem that drives **awareness → engagement → trust → conversion (loan)**.
-
-StudyStack delivers this through five interlocking surfaces:
-
-| Surface | What it does |
-|---|---|
-| **AI Voice Counsellor** | Conducts natural conversations to profile the student, recommend universities, and surface loan options |
-| **Smart Dashboard** | Personalized analysis, 7-step journey tracker, readiness scores, university shortlist |
-| **Loan Intelligence Layer** | Eligibility estimator, dynamic loan offers, EMI calculator, document checklist |
-| **AI Campaign Engine** | Acquires and re-engages users via AI-generated email, social, and WhatsApp content |
-| **Counsellor Operations Hub** | Backs the platform with real human counsellors for high-intent users |
-
-### Innovation & Uniqueness
-
-- **Voice-first profiling:** Unlike form-heavy competitors (Leverage Edu, Yocket), StudyStack profiles students through a live ElevenLabs voice agent — more human, more data, less drop-off
-- **Agentic marketing:** AI autonomously generates and publishes outreach content across LinkedIn, Twitter/X, and email without human involvement
-- **Loan-native UX:** Loan discovery is woven into the student journey rather than bolted on as an afterthought
-- **Memory across sessions:** The platform remembers every conversation, every preference, every concern — creating a relationship, not a transaction
+- [Overview](#-overview)
+- [Core Pillars](#-core-pillars)
+- [System Architecture](#-system-architecture)
+- [Tech Stack](#-tech-stack)
+- [AI Architecture Deep Dive](#-ai-architecture-deep-dive)
+- [User Journey](#-user-journey)
+- [Data Models](#-data-models)
+- [API Surface](#-api-surface)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Business Model](#-business-model)
 
 ---
 
-## SLIDE 2 — OUTLINE OF UNIQUE & INNOVATIVE SOLUTION
+## 🚀 Overview
 
-### The StudyStack Difference: 6 Core Pillars
+StudyStack is a full-stack, AI-native platform built for Indian students planning postgraduate education — abroad (US, UK, Canada, Europe, Australia) or domestically (IIMs, ISB, top private universities).
 
----
+It sits at the intersection of three underserved spaces:
 
-**PILLAR 1 — AI Voice Counselling (ElevenLabs + Gemini)**
-Most edtech platforms force students to fill long forms. StudyStack instead opens a live voice conversation. The ElevenLabs Conversational AI agent:
-- Speaks naturally, asks contextual follow-ups
-- Extracts 13 structured data points in real time (name, GPA, test scores, budget, countries, timeline, etc.)
-- Injects the student's prior history into every new session (memory-persistent)
-- Hands off a complete, scored lead profile to counsellors
+```mermaid
+graph LR
+    A["🔍 Discovery & Planning"] -->|"Students don't know where to start"| D["📚 StudyStack"]
+    B["🤝 Engagement & Trust"] -->|"Students drop off without value"| D
+    C["💰 Financing"] -->|"Loans are opaque & intimidating"| D
+    D -->|"Unified AI Experience"| E["🎓 Dream → Degree → Loan"]
 
-**PILLAR 2 — AI-Powered Personalized Dashboard**
-Gemini 2.5 Pro generates a fully personalized dashboard for each student:
-- 4–8 real university recommendations with match scores, tuition ranges, scholarship info, and deadlines
-- 7-step journey tracker (Profile → Test Prep → Shortlist → SOP → Application → Visa → Departure)
-- Radar chart across 5 dimensions: Academics, Language, Finances, Clarity, Timeline
-- Wellbeing scores (Focus, Confidence, Stress) based on profile and timeline pressure
-- Specific action recommendations by urgency (Urgent / Important / Optional)
+    style D fill:#6366f1,stroke:#4f46e5,color:#fff
+    style E fill:#10b981,stroke:#059669,color:#fff
+```
 
-**PILLAR 3 — Loan Intelligence Layer** *(new module, extending existing platform)*
-Built on top of the student profile already collected:
-- **Loan Eligibility Estimator:** Based on GPA, target country, program, family income, co-applicant status
-- **Dynamic Loan Offers:** Ranked NBFC/bank options (Auxilo, Avanse, HDFC Credila, ICICI Bank, Prodigy Finance) matched to student profile
-- **ROI Calculator:** Expected post-degree salary vs total loan cost with payback period
-- **EMI Planner:** Multiple repayment scenarios (moratorium, partial disbursement, interest-only)
-- **AI-Assisted Application Flow:** Document checklist, auto-fill support, status tracker
-- **Admission Probability Predictor:** Score-based likelihood estimate for target programs
-
-**PILLAR 4 — AI Growth & Acquisition Engine**
-The platform auto-generates and executes outreach campaigns:
-- AI writes blogs, reels scripts, newsletters, and LinkedIn posts using Gemini
-- Exa.ai powers web research to ground content in real university stats and market data
-- Bulk email campaigns via Resend with personalized subject lines per segment
-- Twitter/X and LinkedIn auto-posting with media (AI-generated images via Gemini Image)
-- WhatsApp follow-up automation (session summaries, reminders, booking confirmations)
-
-**PILLAR 5 — Engagement & Retention Loops**
-- Streak-based profile completion incentive (unlock deeper analysis at each milestone)
-- Smart nudges: WhatsApp/email triggered by journey stage (e.g., "You haven't updated your GRE score — deadlines for Cornell are in 6 weeks")
-- Referral mechanic: Invite a friend, both get a premium counselling session credit
-- Gamified readiness score that updates in real time as the student fills their profile
-
-**PILLAR 6 — Counsellor Operations & Lead Intelligence**
-- Kanban lead board with AI-computed scores (Hot ≥75, Warm 50–74, Cold <50)
-- Live session capture with full transcript, AI summary, and follow-up questions
-- Web-research-powered lead discovery (Exa.ai scrapes forums, Reddit, Quora for prospective students)
-- Bulk lead import + automated WhatsApp outreach to imported leads
+**Key differentiators:**
+- **Voice-first profiling** via ElevenLabs — no forms, just conversation
+- **Agentic marketing** — AI autonomously creates & publishes outreach content
+- **Loan-native UX** — financing woven into the student journey, not bolted on
+- **Memory across sessions** — the platform remembers every conversation & preference
 
 ---
 
-## SLIDE 3 — TECHNICAL APPROACH
+## 🏛️ Core Pillars
 
-### Technologies Used
+```mermaid
+mindmap
+  root((StudyStack))
+    🎤 AI Voice Counselling
+      ElevenLabs + Gemini
+      13-field profile extraction
+      Memory-persistent sessions
+      Real-time KYC checklist
+    📊 Personalized Dashboard
+      University recommendations
+      7-step journey tracker
+      Radar & wellbeing scores
+      Action items by urgency
+    💳 Loan Intelligence
+      Eligibility estimator
+      Dynamic NBFC offers
+      ROI & EMI calculators
+      AI application assistant
+    📣 AI Campaign Engine
+      Auto blog & social posts
+      Exa.ai web research
+      Multichannel publishing
+      Bulk email via Resend
+    👥 Counsellor Ops Hub
+      Kanban lead board
+      Session capture & AI summary
+      Lead discovery via Exa.ai
+      WhatsApp outreach
+    🔄 Engagement Loops
+      Streak-based completion
+      Smart nudges
+      Referral mechanics
+      Gamified readiness score
+```
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client Layer"]
+        S["Student Surface"]
+        C["Counsellor Surface"]
+    end
+
+    subgraph API["⚡ API Orchestration — Next.js App Router"]
+        VA["/api/voice-agent"]
+        KYC["/api/kyc"]
+        CAMP["/api/campaign"]
+        LEAD["/api/leads"]
+        EMAIL["/api/email"]
+        LI["/api/linkedin"]
+        TW["/api/twitter"]
+        WA["/api/whatsapp"]
+        LOAN["/api/loan"]
+        AUDIT["/api/audit"]
+        USER["/api/user"]
+        BOOK["/api/bookings"]
+    end
+
+    subgraph AI["🧠 AI Service Layer"]
+        G["Gemini 2.5 Pro/Flash"]
+        EL["ElevenLabs Voice AI"]
+        EXA["Exa.ai Neural Search"]
+        IMG["Gemini Image + Veo"]
+    end
+
+    subgraph Data["💾 Data & Integration Layer"]
+        DB[(MongoDB Atlas)]
+        CLD["Cloudinary CDN"]
+        RS["Resend / Gmail"]
+        SOCIAL["LinkedIn & Twitter APIs"]
+        WHAPI["Whapi Cloud"]
+    end
+
+    S --> API
+    C --> API
+    API --> AI
+    API --> Data
+
+    style Client fill:#1e1b4b,stroke:#6366f1,color:#fff
+    style API fill:#0f172a,stroke:#38bdf8,color:#fff
+    style AI fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style Data fill:#064e3b,stroke:#34d399,color:#fff
+```
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology | Purpose |
-|---|---|---|
+|:------|:-----------|:--------|
 | **Frontend** | Next.js 16, React 19, Tailwind CSS v4 | App shell, SSR, routing |
-| **UI Components** | Framer Motion, ReactFlow, Recharts, Three.js | Animations, DAG canvas, charts, 3D |
-| **Backend** | Next.js API Routes (TypeScript) | All server-side logic |
-| **Database** | MongoDB + Mongoose 9.0 | All persistent data |
+| **UI / UX** | Framer Motion, ReactFlow, Recharts, Three.js, GSAP | Animations, DAG canvas, charts, 3D, scroll effects |
+| **State** | Zustand | Client-side state management |
+| **Backend** | Next.js API Routes (TypeScript + JS) | All server-side logic |
+| **Database** | MongoDB Atlas + Mongoose 9 | Persistent data |
 | **Auth** | NextAuth 4.24 (JWT + Google OAuth) | Session management, RBAC |
 | **Validation** | Zod 4 | Input schema enforcement |
 | **AI — Reasoning** | Google Gemini 2.5 Pro / Flash | Dashboard, extraction, strategy, copy |
-| **AI — Voice** | ElevenLabs Conversational AI | Live voice counselling agent |
+| **AI — Voice** | ElevenLabs Conversational AI | Live voice counselling |
 | **AI — Images** | Gemini Image Model | Campaign creative generation |
 | **AI — Video** | Google Veo (GenAI) | Video concept + generation |
-| **AI — Research** | Exa.ai (neural web search) | Grounded content, lead discovery |
-| **Email** | Resend (primary), Gmail SMTP (fallback) | Transactional + bulk email |
+| **AI — Research** | Exa.ai (Neural Web Search) | Grounded content, lead discovery |
+| **Email** | Resend + Nodemailer (Gmail fallback) | Transactional + bulk email |
 | **Social** | LinkedIn API, Twitter/X API v2 | Organic posting |
-| **WhatsApp** | Whapi Cloud | Student follow-ups, booking |
-| **Media Storage** | Cloudinary | Image hosting + CDN |
-| **Observability** | MongoDB AuditLog + JSONL agent logs | Full API + agent audit trail |
+| **WhatsApp** | Whapi Cloud | Follow-ups, booking confirmations |
+| **Media** | Cloudinary | Image hosting + CDN |
+| **PDF** | jsPDF, pdf-parse, Tesseract.js | PDF generation, parsing, OCR |
+| **Observability** | MongoDB AuditLog + JSONL agent logs | Full audit trail |
 
 ---
 
-### System Architecture Diagram
+## 🧠 AI Architecture Deep Dive
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          STUDYSTACK PLATFORM                            │
-│                    (Next.js 16 — App Router)                            │
-│                                                                         │
-│  ┌────────────────────────┐    ┌──────────────────────────────────────┐ │
-│  │   STUDENT SURFACE      │    │      COUNSELLOR / GROWTH SURFACE     │ │
-│  │                        │    │                                      │ │
-│  │  • Voice Onboarding    │    │  • Lead Kanban Board                 │ │
-│  │  • Profile Dashboard   │    │  • Campaign Builder (DAG)            │ │
-│  │  • Loan Intelligence   │    │  • Session Capture & Summary         │ │
-│  │  • Journey Tracker     │    │  • WhatsApp Outreach                 │ │
-│  │  • ROI / EMI Calc      │    │  • Audit & Observability             │ │
-│  └──────────┬─────────────┘    └────────────┬─────────────────────────┘ │
-│             │                               │                           │
-│  ┌──────────▼───────────────────────────────▼─────────────────────────┐ │
-│  │                    API ORCHESTRATION LAYER                          │ │
-│  │  /api/voice-agent  /api/kyc  /api/campaign  /api/leads             │ │
-│  │  /api/email  /api/linkedin  /api/twitter  /api/whatsapp            │ │
-│  │  /api/loan  /api/audit  /api/user  /api/bookings                   │ │
-│  └───────────────────────────┬────────────────────────────────────────┘ │
-│                              │                                          │
-│  ┌───────────────────────────▼────────────────────────────────────────┐ │
-│  │                    AI SERVICE LAYER                                 │ │
-│  │                                                                     │ │
-│  │  ┌──────────────┐ ┌──────────────┐ ┌────────────┐ ┌────────────┐  │ │
-│  │  │  Gemini 2.5  │ │  ElevenLabs  │ │   Exa.ai   │ │ Gemini Img │  │ │
-│  │  │  Pro/Flash   │ │   Voice AI   │ │  Web Search│ │  + Veo     │  │ │
-│  │  │              │ │              │ │            │ │            │  │ │
-│  │  │ Reasoning    │ │ Live Voice   │ │ Research   │ │ Campaign   │  │ │
-│  │  │ Extraction   │ │ Counselling  │ │ Lead Disc. │ │ Creatives  │  │ │
-│  │  │ Strategy     │ │ Memory Inject│ │ Content    │ │ Video Gen  │  │ │
-│  │  └──────────────┘ └──────────────┘ └────────────┘ └────────────┘  │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    DATA & INTEGRATION LAYER                         │ │
-│  │                                                                     │ │
-│  │  MongoDB        Cloudinary     Resend/Gmail   LinkedIn API          │ │
-│  │  (Users,        (Images,       (Bulk Email,   Twitter/X API         │ │
-│  │  Leads,         CDN)           Transactional) Whapi (WhatsApp)      │ │
-│  │  Workflows,                                                         │ │
-│  │  Sessions,                                                          │ │
-│  │  AuditLogs)                                                         │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
+### Voice Counselling Flow
+
+```mermaid
+sequenceDiagram
+    participant Student
+    participant ElevenLabs as ElevenLabs Voice AI
+    participant Memory as Memory Endpoint
+    participant Gemini as Gemini Flash
+    participant DB as MongoDB
+    participant WA as WhatsApp
+
+    Student->>ElevenLabs: Opens voice session
+    ElevenLabs->>Memory: Fetch student context
+    Memory-->>ElevenLabs: Profile + 15 prior sessions
+
+    loop Every ~30 seconds
+        ElevenLabs->>Gemini: Live transcript chunk
+        Gemini-->>DB: Extract & upsert KYC fields
+        DB-->>Student: Live KYC checklist update
+    end
+
+    Student->>ElevenLabs: Ends session
+    ElevenLabs->>Gemini: Full transcript
+    Gemini-->>DB: Final extraction + lead score
+    Gemini-->>DB: AI summary + follow-up Qs
+    DB->>WA: Session summary to student
+    DB->>DB: Notify counsellor with dossier
 ```
 
----
+### Dashboard Analysis Flow
 
-### AI Architecture Deep Dive
+```mermaid
+flowchart TD
+    A["Student Profile ≥ 60% Complete"] --> B{"Cache fresh? < 24h"}
+    B -->|Yes| C["Return cached analysis"]
+    B -->|No| D["Gemini 2.5 Pro"]
+    D --> E["Structured JSON Output"]
+    E --> F["AI Insight Headline"]
+    E --> G["4–8 University Recs"]
+    E --> H["Action Items by Urgency"]
+    E --> I["Wellbeing Scores"]
+    E --> J["Radar Chart (5 axes)"]
+    E --> K["6-Month Progress Trend"]
+    E --> L["7-Step Journey Tracker"]
 
-#### A. Voice Counselling Flow
-
-```
-Student Opens App
-       │
-       ▼
-ElevenLabs Widget (WebSocket, <3s latency)
-       │
-       ├──── ElevenLabs System Prompt (university KB, loan KB, tone guidelines)
-       │
-       ├──── Memory Injection Endpoint (/api/voice-agent/memory)
-       │     └── Pulls: student profile + 15 prior sessions + resume plan
-       │
-       ▼
-Live Conversation (voice ↔ agent)
-       │
-       ├──── Live Extract Loop (/api/voice-agent/live-extract)
-       │     └── Gemini Flash extracts structured fields every ~30s
-       │     └── Updates MongoDB User.studentProfile in real time
-       │     └── LiveKYCChecklist updates on student screen
-       │
-       ▼
-Session End (/api/voice-agent/end-session)
-       │
-       ├──── Final extraction + profile merge
-       ├──── Lead score computed (intent + financial + urgency → 0–100)
-       ├──── AI summary + follow-up questions (Gemini Pro)
-       ├──── WhatsApp summary sent to student
-       └──── Counsellor notified with full session dossier
+    style A fill:#6366f1,stroke:#4f46e5,color:#fff
+    style D fill:#4285f4,stroke:#3367d6,color:#fff
+    style E fill:#10b981,stroke:#059669,color:#fff
 ```
 
-#### B. Dashboard Analysis Flow
+### Agentic Campaign Workflow (DAG Execution)
 
-```
-Student Profile (complete ≥ 60%)
-       │
-       ▼
-/api/user/dashboard-analysis
-       │
-       ├──── Fingerprint cache check (skip if <24h old, ~90% token savings)
-       │
-       ▼
-Gemini 2.5 Pro (structured JSON prompt)
-       │
-       └── Output:
-           ├── AI Insight headline + body
-           ├── 4–8 University Recommendations (real institutions)
-           ├── 3–5 Action Items (by urgency)
-           ├── Wellbeing Scores (Focus / Confidence / Stress)
-           ├── Radar Scores (5 axes)
-           ├── 6-month Progress Trend
-           └── 7-step Journey (personalized per student)
+```mermaid
+flowchart LR
+    A["📝 Campaign Brief"] --> B["✨ Brief Enhancement<br/>Gemini Pro"]
+    B --> C["📋 Strategy Generation<br/>HTML Rationale"]
+    C --> D["🔀 Workflow Graph<br/>Nodes + Edges"]
+    D --> E["⚙️ Node Execution"]
+
+    E --> F["📧 Email<br/>Resend Bulk"]
+    E --> G["💼 LinkedIn<br/>API Post"]
+    E --> H["🐦 Twitter/X<br/>API Post"]
+    E --> I["💬 WhatsApp<br/>Whapi"]
+    E --> J["🖼️ Image<br/>Gemini Image"]
+    E --> K["🎬 Video<br/>Google Veo"]
+
+    style A fill:#f59e0b,stroke:#d97706,color:#000
+    style D fill:#6366f1,stroke:#4f46e5,color:#fff
+    style E fill:#ec4899,stroke:#db2777,color:#fff
 ```
 
-#### C. Loan Intelligence Flow *(new module)*
+### AI Model Strategy
 
-```
-Student Profile (KYC complete)
-       │
-       ▼
-Loan Eligibility Engine
-       │
-       ├──── Rule engine: maps profile fields → eligibility bands
-       │     (GPA, target country, program tier, estimated family income)
-       │
-       ├──── Gemini Flash: generates personalized loan summary
-       │     ("Based on your profile, you are likely eligible for ₹40–60L
-       │      from Auxilo or Avanse. Here's why...")
-       │
-       ├──── Dynamic Offer Cards (ranked by match):
-       │     HDFC Credila / Auxilo / Avanse / Prodigy Finance / ICICI Bank
-       │
-       ├──── ROI Calculator: expected salary (program/country/GPA) vs loan cost
-       │
-       └──── AI Application Assistant:
-             ├── Document checklist (auto-generated per lender)
-             ├── Auto-fill support from existing profile
-             └── Application status tracker
-```
+```mermaid
+graph TD
+    subgraph Pro["Gemini 2.5 PRO — High Reasoning"]
+        P1["Dashboard analysis"]
+        P2["Campaign strategy + workflow"]
+        P3["Session summary + follow-ups"]
+        P4["Loan eligibility narrative"]
+    end
 
-#### D. Agentic Campaign Workflow (DAG Execution)
+    subgraph Flash["Gemini 2.5 FLASH — Fast & Cheap"]
+        F1["Live voice extraction (30s)"]
+        F2["Brief enhancement"]
+        F3["Node copy generation"]
+        F4["Lead score computation"]
+    end
 
-```
-Counsellor inputs campaign brief
-       │
-       ▼
-Brief Enhancement (Gemini Pro)
-       │
-       ▼
-Strategy Generation (HTML rationale document)
-       │
-       ▼
-Workflow Graph Generation (nodes + edges, ReactFlow canvas)
-       │
-       ▼
-Node Execution (sequential or selective)
-       │
-       ├── strategy → copy → image → distribution
-       ├── research (Exa.ai) → email → linkedin → twitter
-       ├── timeline → video (Veo pipeline)
-       └── Context propagation across edges (prior node output feeds next)
-       │
-       ▼
-Multichannel Publishing:
-  Email (Resend bulk) + LinkedIn (API post) + Twitter/X + WhatsApp
-```
+    subgraph Media["Generative Media"]
+        M1["Gemini Image → Campaign creatives"]
+        M2["Google Veo → Video generation"]
+    end
 
-#### E. Lead Scoring Algorithm
+    subgraph External["External AI"]
+        E1["ElevenLabs → Voice interactions"]
+        E2["Exa.ai → Web research & leads"]
+    end
 
-```
-Lead Score (0–100) =
-  Intent Score (keyword match: "GRE", "IELTS", "SOP", "visa", "admit")
-    + Contact Completeness (email, phone, name present)
-    + Lead Type Bonus (student vs counsellor vs generic)
-
-Thresholds:
-  ≥75  →  HOT  (immediate counsellor action)
-  50–74 → WARM (nurture sequence)
-  <50  →  COLD (automated drip campaign)
+    style Pro fill:#4c1d95,stroke:#7c3aed,color:#fff
+    style Flash fill:#1e40af,stroke:#3b82f6,color:#fff
+    style Media fill:#065f46,stroke:#10b981,color:#fff
+    style External fill:#9a3412,stroke:#f97316,color:#fff
 ```
 
 ---
 
-### Methodology & Implementation Flow
+## 🗺️ User Journey
 
-**Phase 1 — Student Acquisition**
-AI campaign engine (Exa research + Gemini copy + Cloudinary images) publishes content across LinkedIn, Twitter, and email targeting Indian UG students by segment (GRE takers, CAT aspirants, IELTS registered users).
-
-**Phase 2 — Onboarding & Profiling**
-New user signs in via Google OAuth or email. Opens voice agent. 13-field profile extracted in <10 minutes through natural conversation. Profile completion gates dashboard depth (streaks + unlock mechanic).
-
-**Phase 3 — Continuous Engagement**
-Gemini dashboard refreshes with new recommendations as profile improves. Smart WhatsApp/email nudges sent at journey-relevant moments. Counsellor books sessions for high-intent (Hot) leads.
-
-**Phase 4 — Loan Conversion**
-At 70%+ profile completion, the Loan Intelligence Layer activates. Student sees eligibility, offers, ROI, and EMI. AI application assistant walks them through document collection and submission.
-
-**Phase 5 — Post-Conversion Nurture**
-Journey tracker continues post-loan: visa steps, pre-departure checklist, alumni community hook.
-
----
-
-## SLIDE 4 — FEASIBILITY & VIABILITY
-
-### Feasibility Analysis
-
-**Is the technology ready?**
-Yes. StudyStack is built on production-grade, commercially available APIs:
-- Gemini 2.5 Pro and Flash are live and stable with documented rate limits
-- ElevenLabs Conversational AI is in production with sub-3s latency
-- MongoDB Atlas scales to millions of records with no infrastructure changes
-- All social/email APIs (LinkedIn, Twitter, Resend, Whapi) are live integrations, not mocks
-
-**Is the team capable?**
-The codebase already exists as a production-style Next.js monolith. The loan intelligence layer and gamification loop are extensions on top of an already-functional platform. Time-to-MVP for the new modules is estimated at 3–4 weeks.
-
-**Is the market large enough?**
-- ~1.3M Indian students study abroad annually (ICEF Monitor, 2024)
-- Domestic PG aspirants: ~2.5M per year (IIT/IIM/private combined)
-- Education loan disbursement in India: ₹1.2 lakh crore outstanding (RBI, 2024)
-- Addressable market for this platform: ~3.8M students per cohort year
-
-### Potential Challenges & Mitigation
-
-| Challenge | Risk Level | Mitigation |
-|---|---|---|
-| ElevenLabs voice latency on mobile/low bandwidth | Medium | Fallback to text chat if WebSocket latency >5s |
-| Gemini API cost at scale | Medium | Fingerprint caching (~90% call reduction), Flash for lightweight tasks, Pro only for dashboard |
-| LinkedIn/Twitter API rate limits | Medium | Queue-based posting, retry logic, OAuth1 fallback for Twitter |
-| Student data privacy (DPDP Act 2023) | High | All sensitive fields auto-redacted in audit logs, no PII in JSONL logs, data residency on Indian Atlas cluster |
-| NBFC partnership for loan offers | High | Start with affiliate model (redirect with UTM), negotiate direct API integration post-MVP |
-| WhatsApp Business compliance | Low | Whapi Cloud handles compliance; template messages pre-approved |
-| User trust in AI voice counselling | Medium | Human escalation path always visible; counsellor handoff on demand |
-
-### Strategies for Overcoming Challenges
-
-1. **Cost management:** Tiered AI usage — Gemini Flash for extraction, Gemini Pro for analysis. Dashboard cache with 24-hour TTL cuts 90% of repeat calls.
-2. **Regulatory compliance:** DPDP-ready data architecture from day one. Explicit consent screens before voice recording. Data deletion on request.
-3. **Loan partner onboarding:** Phase 1 = affiliate links (revenue day 1). Phase 2 = API integration with Auxilo/Avanse (3–6 months). Phase 3 = co-branded product with NBFC (12 months).
-4. **Trust building:** Show voice transcript to student after every session. Let them edit extracted data. Transparency = trust.
+```mermaid
+journey
+    title Student Journey on StudyStack
+    section Awareness
+      See AI-generated content on LinkedIn/Twitter: 3: Student
+    section Acquisition
+      Click → Landing Page → Google OAuth: 5: Student
+    section Activation
+      Voice Agent opens → 10-min profile call: 5: Student, AI
+      Dashboard unlocks with recommendations: 4: Student
+    section Engagement
+      Daily dashboard updates & smart nudges: 4: Student, AI
+      Journey tracker progress: 4: Student
+    section Loan Discovery
+      Profile 70%+ → Loan intelligence activates: 5: Student, AI
+      Eligibility check → Personalized offers: 5: Student
+    section Conversion
+      AI document checklist → Lender application: 5: Student, AI
+    section Retention
+      Post-loan journey tracker & referral: 4: Student
+```
 
 ---
 
-## SLIDE 5 — IMPACT & BENEFITS
+## 📦 Data Models
 
-### Impact on Target Audience
+```mermaid
+erDiagram
+    User ||--o{ ConversationMemory : has
+    User ||--o{ CounsellorSession : participates
+    User ||--o| LoanApplication : applies
+    User ||--o{ Booking : schedules
+    Lead }o--|| User : "linked to"
+    Campaign ||--|{ PastWorkflow : generates
+    CounsellorSession ||--o{ ConversationMemory : references
 
-**For Students:**
-- Replaces 10+ fragmented touchpoints (college fairs, coaching centres, loan DSAs, visa consultants) with one intelligent platform
-- Saves 80–120 hours of research time through AI-powered shortlisting
-- Democratizes access: a student in Tier 2/3 India gets the same quality of guidance as someone in Delhi or Mumbai
-- Makes education financing less intimidating: personalized eligibility + clear EMI math = confident decision-making
+    User {
+        string name
+        string email
+        string role "student | counsellor"
+        object studentProfile "13 KYC fields"
+        object dashboardAnalysis "cached Gemini output"
+        object socialTokens "LinkedIn, Twitter"
+    }
 
-**For NBFCs / Lenders:**
-- Pre-qualified, intent-verified leads (not cold form fills)
-- Complete student dossier (GPA, program, country, financial situation) reduces underwriting time
-- Estimated loan conversion rate 3–5x higher than cold leads (profile-matched offers)
+    ConversationMemory {
+        array transcriptSlices "up to 15 sessions"
+        object extractedFacts "structured JSON"
+        string summary
+        string sentiment
+    }
 
-**For Counsellors / Overseas Education Agencies:**
-- Eliminates repetitive intake calls — AI handles profiling
-- Hot lead alerts with complete context = more productive sessions
-- Campaign engine replaces a full marketing team
+    Lead {
+        string source "voice | form | import | web-research"
+        number score "0–100"
+        string stage "new | contacted | qualified | converted"
+        boolean loanInterest
+    }
 
-### Benefits
+    LoanApplication {
+        number eligibilityScore
+        array matchedOffers "NBFC + terms"
+        object roiProjection
+        array documentChecklist "per lender"
+        string applicationStatus
+    }
 
-**Social Impact:**
-- Equalizes access to quality study-abroad guidance across income segments
-- Reduces student vulnerability to predatory agents and fraudulent consultants
-- Builds financial literacy around education loans in a population with low credit awareness
+    CounsellorSession {
+        string transcript
+        string aiSummary
+        array followUpQuestions
+        boolean whatsappNotified
+    }
 
-**Economic Impact:**
-- ₹40–80L average loan per international student → significant NBFC disbursement volume
-- Platform can process 10,000+ students simultaneously vs 1 human counsellor per 50 students
-- Reduces cost of student acquisition for NBFCs from ₹15,000–₹25,000 per loan to <₹2,000
+    Campaign {
+        string name
+        string strategy
+        array channels
+    }
 
-**Environmental Impact:**
-- Eliminates the need for physical counselling centres, travel, and printed materials
-- All-digital document collection and verification
+    PastWorkflow {
+        array nodes "11 types"
+        array edges
+        object executionStatus
+    }
 
----
-
-## SLIDE 6 — BUSINESS MODEL
-
-### Business Model Overview
-
-StudyStack operates a **multi-sided marketplace** with three revenue streams that activate at different stages of platform maturity:
-
----
-
-**STREAM 1 — Loan Referral Commission (Core Revenue, Day 1)**
-- For every approved education loan originated through the platform, StudyStack earns a referral fee from the NBFC/bank
-- Industry standard: 0.5%–1.5% of loan value
-- Average loan: ₹30–60L → Revenue per loan: ₹15,000–₹90,000
-- Target: 500 loan referrals/month by Month 12 → ₹1.5–4.5 Cr/month
-
-**STREAM 2 — B2C Premium Subscription**
-- Free Tier: Voice onboarding, basic dashboard, 1 counsellor session
-- StudyStack Pro (₹999/month or ₹4,999 one-time): Full dashboard, unlimited voice sessions, loan intelligence, document auto-fill, visa checklist, priority counsellor access
-- Target: 5,000 paying subscribers by Month 12 → ₹50L+/month
-
-**STREAM 3 — B2B SaaS (Counsellor/Agency License)**
-- White-label the counsellor operations hub (lead scoring, campaign engine, session management) for overseas education agencies
-- Pricing: ₹15,000–₹50,000/month per agency seat
-- Target: 50 agency clients by Month 12 → ₹75L–2.5 Cr/month
-
-**STREAM 4 — Data & Insights (Year 2+)**
-- Anonymized, aggregated demand signal data sold to universities for recruitment planning
-- Universities pay to list as "Featured" in student recommendations with placement accuracy data
-
----
-
-### Target Market & Size
-
-| Segment | Size | Our Addressable |
-|---|---|---|
-| Indian students studying abroad (annual) | 1.3M | 500K (top-of-funnel) |
-| Domestic PG aspirants (annual) | 2.5M | 1M (top-of-funnel) |
-| Education loan applicants (annual) | 600K | 200K (conversion target) |
-| Overseas education agencies in India | ~8,000 | 500 (B2B target) |
-
-**Total Addressable Market (TAM):** ₹12,000 Cr+ (education loan facilitation + counselling services)
-**Serviceable Addressable Market (SAM):** ₹800–1,200 Cr (AI-led platform capture in 3 years)
+    Booking {
+        date scheduledAt
+        string status
+        string counsellorId
+    }
+```
 
 ---
 
-### Growth Strategy
+## 🔌 API Surface
 
-**Phase 1 — Seed Growth (Months 1–3): Content-Led Acquisition**
-- AI campaign engine publishes 50+ pieces of content/week across LinkedIn, Instagram, and Twitter targeting Indian UG students
-- SEO-optimized AI-generated blogs (GRE tips, university rankings, visa guides, EMI calculators)
-- WhatsApp community seeding in engineering college groups via micro-influencers
-- Goal: 10,000 registered users
+The platform exposes **22 API route groups** under `/api/`:
 
-**Phase 2 — Viral Growth (Months 4–6): Referral + Gamification**
-- "Invite a friend, both get a free premium month" — loan application is a shared journey
-- Leaderboard of readiness scores within friend groups ("Your GRE score ranks you higher than 73% of your peers applying to Canada")
-- Partner with IELTS/GRE prep platforms (IDP, Magoosh) for co-promotion
-- Goal: 50,000 registered users, 5,000 active loan inquiries
-
-**Phase 3 — Scale (Months 7–12): NBFC Integration + B2B**
-- Direct API integration with 2–3 NBFCs for real-time loan eligibility
-- Onboard 20+ overseas education agencies on B2B SaaS license
-- Launch referral program targeting study-abroad bloggers and YouTube creators
-- Goal: 200,000 registered users, 500+ monthly loan conversions
+| Route Group | Key Endpoints | Purpose |
+|:------------|:-------------|:--------|
+| `voice-agent` | `memory`, `live-extract`, `end-session`, `anam-session` | Voice counselling lifecycle |
+| `kyc` | Profile extraction & validation | Student KYC management |
+| `user` | `dashboard-analysis`, profile CRUD | User data & AI dashboard |
+| `loan` | Eligibility, offers, ROI, EMI, application | Loan intelligence layer |
+| `campaign` | Brief, strategy, workflow execution | Agentic campaign engine |
+| `leads` | Scoring, import, Kanban management | Lead management |
+| `email` | Single & bulk send via Resend | Email outreach |
+| `linkedin` | OAuth, post creation | LinkedIn integration |
+| `twitter` | OAuth, tweet posting | Twitter/X integration |
+| `whatsapp` | Send, poll, schedule | WhatsApp automation |
+| `counsellor` | Session mgmt, assignment | Counsellor operations |
+| `counsellor-sessions` | Capture, transcript, summary | Session intelligence |
+| `bookings` | Schedule, manage | Appointment scheduling |
+| `audit` | Logs, agent observability | Audit trail & monitoring |
+| `workflows` | DAG save, load, execute | Campaign workflow persistence |
+| `video-studio` | Veo generation pipeline | AI video creation |
+| `cloudinary` | Upload, transform | Media management |
+| `students` | Student listing & search | Student directory |
 
 ---
 
-### Monetization & Business Impact Summary
+## 📁 Project Structure
+
+```
+StudyStack/
+├── app/
+│   ├── api/                    # 22 API route groups
+│   │   ├── voice-agent/        # ElevenLabs + memory + extraction
+│   │   ├── loan/               # Loan intelligence endpoints
+│   │   ├── campaign/           # Agentic campaign engine
+│   │   ├── leads/              # Lead scoring & management
+│   │   ├── email/              # Resend integration
+│   │   ├── linkedin/           # LinkedIn API
+│   │   ├── twitter/            # Twitter/X API
+│   │   ├── whatsapp/           # Whapi Cloud
+│   │   └── ...                 # audit, bookings, user, etc.
+│   ├── dashboard/              # Student & counsellor dashboards
+│   │   ├── complete/           # Full analysis view
+│   │   ├── counsellor/         # Counsellor operations hub
+│   │   └── loan/               # Loan intelligence UI
+│   ├── campaign/               # Campaign builder (DAG canvas)
+│   ├── onboarding/             # Voice onboarding flow
+│   ├── profile/                # User profile management
+│   ├── merkle/                 # Merkle tree visualization
+│   ├── audit/                  # Audit log viewer
+│   ├── login/                  # Auth pages
+│   └── page.js                 # Landing page (28KB of premium UI)
+├── components/
+│   ├── AnamVoiceAgent.jsx      # Voice agent component
+│   ├── ElevenLabsVoiceAgent.jsx # ElevenLabs integration
+│   ├── AICounsellingDashboard.jsx # 53KB dashboard component
+│   ├── JourneyPath.jsx         # 7-step journey visualization
+│   ├── LiveKYCChecklist.jsx    # Real-time KYC tracker
+│   ├── StudentProfileCard.jsx  # Profile card with scores
+│   ├── LiquidEther.jsx         # 3D background (Three.js)
+│   ├── LaserFlow.jsx           # Animated flow visualization
+│   ├── StaggeredMenu.jsx       # Animated navigation
+│   ├── MerkleTreeVisualization.jsx # Data integrity viz
+│   ├── campaign/               # Campaign-specific components
+│   └── ui/                     # Radix UI primitives
+├── lib/
+│   ├── models/                 # 15 Mongoose models
+│   ├── loan/                   # Loan calculation engine
+│   ├── validations/            # Zod schemas
+│   ├── whatsapp/               # WhatsApp helpers
+│   ├── gemini.ts               # Gemini API client
+│   ├── cloudinary.ts           # Cloudinary integration
+│   ├── execution-engine.ts     # Campaign DAG executor
+│   ├── audit-logger.ts         # Audit logging system
+│   ├── agent-observability.ts  # AI agent monitoring
+│   └── store.ts                # Zustand state store
+└── public/                     # Static assets
+```
+
+---
+
+## ⚡ Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ 18.x
+- **MongoDB Atlas** cluster (or local MongoDB)
+- API keys: Google Gemini, ElevenLabs, Exa.ai, Resend, Cloudinary
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/StudyStack.git
+cd StudyStack/StudyStack
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Fill in your API keys (see Environment Variables section)
+
+# Run the development server
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`.
+
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the `StudyStack/` directory:
+
+```env
+# Database
+MONGODB_URI=mongodb+srv://...
+
+# Auth
+NEXTAUTH_SECRET=your-secret
+NEXTAUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# AI Services
+GEMINI_API_KEY=...
+ELEVENLABS_API_KEY=...
+EXA_API_KEY=...
+
+# Email
+RESEND_API_KEY=...
+
+# Social
+LINKEDIN_CLIENT_ID=...
+LINKEDIN_CLIENT_SECRET=...
+TWITTER_API_KEY=...
+TWITTER_API_SECRET=...
+
+# WhatsApp
+WHAPI_TOKEN=...
+
+# Media
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+---
+
+## 💼 Business Model
+
+```mermaid
+pie title Revenue Streams (Month 12 Projection)
+    "Loan Commissions ₹2.5Cr" : 45
+    "B2B SaaS Licenses ₹1.5Cr" : 27
+    "Premium Subscriptions ₹50L" : 9
+    "Other" : 19
+```
+
+| Stream | Model | Month 12 Target |
+|:-------|:------|:----------------|
+| **Loan Referral** | 0.5–1.5% of loan value per NBFC referral | ₹2.5 Cr/mo |
+| **B2B SaaS** | ₹15K–50K/mo per agency seat | ₹1.5 Cr/mo |
+| **Premium Sub** | ₹999/mo or ₹4,999 one-time | ₹50L/mo |
+
+**Growth Trajectory:**
 
 | Metric | Month 6 | Month 12 | Month 24 |
-|---|---|---|---|
-| Registered Users | 50,000 | 200,000 | 800,000 |
-| Monthly Active Users | 15,000 | 80,000 | 300,000 |
-| Loan Referrals / Month | 50 | 500 | 3,000 |
-| Revenue (Loan Commissions) | ₹25L | ₹2.5Cr | ₹15Cr |
-| Revenue (Subscriptions) | ₹10L | ₹50L | ₹3Cr |
-| Revenue (B2B SaaS) | ₹15L | ₹1.5Cr | ₹10Cr |
-| **Total MRR** | **₹50L** | **₹4.5Cr** | **₹28Cr** |
+|:-------|:--------|:---------|:---------|
+| Registered Users | 50K | 200K | 800K |
+| Monthly Active Users | 15K | 80K | 300K |
+| Loan Referrals/mo | 50 | 500 | 3,000 |
+| **Total MRR** | **₹50L** | **₹4.5 Cr** | **₹28 Cr** |
 
 ---
 
-### Commercialization Path & Key Partnerships
-
-**Immediate (0–3 months):**
-- NBFC affiliate agreements: Auxilo Financials, Avanse Financial Services, HDFC Credila
-- University data partnership: QS, Times Higher Education rankings data licensing
-- Voice infra: ElevenLabs enterprise plan
-
-**Medium-term (3–12 months):**
-- Bank co-brand: ICICI/Axis "StudyStack Loan" product
-- Test prep integration: Magoosh, IDP, British Council referral partnerships
-- Visa services: VFS Global affiliate for visa appointment booking
-
-**Long-term (12–36 months):**
-- Insurance cross-sell: Student travel and health insurance (Bajaj Allianz, HDFC Ergo)
-- Accommodation: University-approved housing booking (partnership with Amber, UniAcco)
-- Alumni network monetization: Job placement, mentorship premium
-
----
-
-## APPENDIX — DIAGRAMS
-
-### A. User Journey Map
-
-```
-AWARENESS
-  │   └── AI Blog / Reel / LinkedIn Post / WhatsApp Forward
-  │
-ACQUISITION
-  │   └── Click → Landing Page → Google OAuth sign-up (10 seconds)
-  │
-ACTIVATION
-  │   └── Voice Agent opens → 10-min profile call → Dashboard unlocks
-  │
-ENGAGEMENT
-  │   └── Daily: Dashboard updates, nudges, journey tracker
-  │   └── Weekly: New university recommendations, AI email digest
-  │   └── Event-triggered: "Cornell deadline in 3 weeks" WhatsApp alert
-  │
-LOAN DISCOVERY
-  │   └── Profile 70% complete → Loan banner appears
-  │   └── Eligibility check → Personalized offers → ROI shown
-  │
-CONVERSION
-  │   └── "Apply for Loan" → AI document checklist → Lender redirect
-  │   └── Counsellor assigned for high-value leads
-  │
-RETENTION & REFERRAL
-      └── Journey tracker continues post-loan
-      └── "Refer a friend" nudge → Viral loop
-```
-
----
-
-### B. AI Model Allocation
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                    AI MODEL STRATEGY                      │
-│                                                          │
-│  Gemini 2.5 PRO (High reasoning, higher cost)           │
-│    ├── Dashboard analysis generation                    │
-│    ├── Campaign strategy + workflow graph               │
-│    ├── Session summary + follow-up questions            │
-│    └── Loan eligibility narrative                       │
-│                                                          │
-│  Gemini 2.5 FLASH (Faster, cheaper)                     │
-│    ├── Live voice extraction (every 30s)                │
-│    ├── Brief enhancement                                │
-│    ├── Node copy generation                             │
-│    └── Lead score computation                           │
-│                                                          │
-│  Gemini IMAGE MODEL                                     │
-│    └── Campaign creative generation                     │
-│                                                          │
-│  Google VEO                                             │
-│    └── Video concept + generation pipeline              │
-│                                                          │
-│  ElevenLabs Conversational AI                           │
-│    └── All real-time voice interactions                 │
-│                                                          │
-│  Exa.ai (Neural Web Search)                             │
-│    ├── Web research for campaign content                │
-│    └── Lead discovery (forums, social, news)            │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-### C. Platform Data Model (Key Entities)
-
-```
-User
-  ├── identity (name, email, role: student|counsellor)
-  ├── studentProfile (13 KYC fields + loan profile)
-  ├── dashboardAnalysis (cached Gemini output)
-  └── socialTokens (LinkedIn, Twitter)
-
-ConversationMemory
-  ├── transcript slices (up to 15 sessions)
-  ├── extractedFacts (structured JSON)
-  └── summary + sentiment
-
-Lead
-  ├── source (voice | form | import | web-research)
-  ├── score (0–100) + breakdown
-  ├── stage (new | contacted | qualified | converted)
-  └── loanInterest flag
-
-LoanApplication ← NEW
-  ├── eligibilityScore
-  ├── matchedOffers (NBFC + terms)
-  ├── roiProjection
-  ├── documentChecklist (per lender)
-  └── applicationStatus
-
-CounsellorSession
-  ├── transcript + rawEvents
-  ├── aiSummary + followUpQuestions
-  └── whatsappNotified flag
-
-PastWorkflow (Campaign)
-  ├── nodes (11 types) + edges
-  ├── executionStatus per node
-  └── publishedChannels
-```
-
----
-
-### D. Bonus: Zero Human Intervention AI Growth Loop
-
-```
-┌──────────────────────────────────────────────────────────┐
-│            AUTONOMOUS AI GROWTH LOOP                     │
-│                                                          │
-│  1. DISCOVER                                            │
-│     Exa.ai searches Reddit/Quora/LinkedIn for           │
-│     "studying in US 2025 India" discussions             │
-│     → Extracts prospective student signals              │
-│                                                          │
-│  2. CREATE CONTENT                                       │
-│     Gemini generates SEO blog + LinkedIn post +         │
-│     email sequence based on trending questions          │
-│                                                          │
-│  3. PUBLISH                                             │
-│     Auto-published to LinkedIn, Twitter, bulk email     │
-│     (zero human approval needed)                        │
-│                                                          │
-│  4. ACQUIRE                                             │
-│     UTM-tracked clicks → signup page                   │
-│     → Google OAuth → profile created                   │
-│                                                          │
-│  5. PROFILE                                             │
-│     ElevenLabs voice agent auto-triggered               │
-│     → 13 fields extracted → Lead scored                 │
-│                                                          │
-│  6. NURTURE                                             │
-│     Gemini dashboard + WhatsApp nudges                  │
-│     + smart email sequences (stage-triggered)           │
-│                                                          │
-│  7. CONVERT                                             │
-│     Loan intelligence layer surfaces offers             │
-│     → AI application assistant → NBFC referral         │
-│                                                          │
-│  8. LOOP                                               │
-│     Converted student's profile data improves           │
-│     recommendation engine → better content →           │
-│     more accurate targeting → back to step 1           │
-│                                                          │
-│  Human involvement: 0 (until student explicitly         │
-│  requests a live counsellor)                            │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-*StudyStack — Built on GradPilot | Next.js 16 · React 19 · Gemini 2.5 · ElevenLabs · Exa.ai · MongoDB*
-*Submission: April 2026*
+<p align="center">
+  <strong>StudyStack</strong> · Next.js 16 · React 19 · Gemini 2.5 · ElevenLabs · Exa.ai · MongoDB
+  <br/>
+  <em>Built with ❤️ for Indian students chasing their dreams</em>
+</p>
