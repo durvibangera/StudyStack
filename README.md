@@ -285,27 +285,15 @@ graph TD
 
 ## 🗺️ User Journey
 
-```mermaid
-journey
-    title Student Journey on StudyStack
-    section Awareness
-      See AI content on LinkedIn or Twitter: 3
-    section Acquisition
-      Landing page and Google OAuth signup: 5
-    section Activation
-      Voice Agent profile call: 5
-      Dashboard unlocks: 4
-    section Engagement
-      Daily dashboard updates and nudges: 4
-      Journey tracker progress: 4
-    section Loan Discovery
-      Loan intelligence activates at 70 pct: 5
-      Eligibility check and personalized offers: 5
-    section Conversion
-      AI document checklist and lender app: 5
-    section Retention
-      Post-loan journey tracker and referral: 4
-```
+| Stage | Touchpoint | Experience |
+|:---|:---|:---|
+| **1. Awareness** | Social Media | Sees AI-generated content on LinkedIn or Twitter |
+| **2. Acquisition** | Landing Page | Clicks through and signs up via Google OAuth in 10s |
+| **3. Activation** | Voice Agent | Completes 10-minute profile call; Dashboard unlocks |
+| **4. Engagement** | Dashboard & WA | Receives daily updates, smart nudges, and journey tracking |
+| **5. Loan Discovery** | Intelligence Layer| Profile hits 70% completion → Personalized offers activate |
+| **6. Conversion** | App Assistant | Completes AI document checklist and applies to lender |
+| **7. Retention** | Post-Loan | Journey tracker continues for visa/departure + referral |
 
 ---
 
