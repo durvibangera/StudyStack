@@ -330,31 +330,25 @@ export default function ElevenLabsVoiceAgent({ onComplete, mode = 'onboarding', 
       // Build a comprehensive system prompt override so the agent knows
       // exactly what to do — ask KYC questions, support Hindi, etc.
       const systemPrompt = buildOnboardingSystemPrompt(memoryCtx, studentName, resumePlan);
-      config.overrides = {
-        ...(config.overrides || {}),
-        agent: {
-          ...(config.overrides?.agent || {}),
-          prompt: {
-            prompt: systemPrompt,
-          },
-        },
-      };
+      
+      // Pass the first spoken message as a dynamic variable instead of an override
+      let firstMsg = `Hey there! I'm Aria from StudyStack — I'll be helping you plan your study abroad journey today. This will be super quick and fun! So let's start — what's your name?`;
 
-      // Override the first spoken message for returning students so the
-      // agent doesn't repeat the generic introduction.
       if (isReturning && resumePlan) {
         const focusLabels = (resumePlan.focusFields || []).slice(0, 3).join(', ');
         const name = studentName || 'there';
-        const firstMsg =
+        firstMsg =
           resumePlan.resumeMode === 'fast-finish'
             ? `Welcome back, ${name}! We're almost done — I just need a couple more details${focusLabels ? ` like ${focusLabels}` : ''}. Let's wrap this up quickly.`
             : `Hey ${name}, good to have you back! I still have everything from last time. Let me pick up where we left off${focusLabels ? ` — I still need ${focusLabels}` : ''}.`;
-
-        config.overrides.agent.firstMessage = firstMsg;
-      } else {
-        // Fresh student — start with a warm greeting + immediate question
-        config.overrides.agent.firstMessage = `Hey there! I'm Aria from StudyStack — I'll be helping you plan your study abroad journey today. This will be super quick and fun! So let's start — what's your name?`;
       }
+
+      // Safely assign all our dynamic variables in one block
+      config.dynamicVariables = {
+        ...(config.dynamicVariables || {}),
+        dynamic_system_prompt: systemPrompt,
+        dynamic_first_message: firstMsg
+      };
     };
 
     // ── Handle conversation ID from metadata ──
@@ -491,7 +485,7 @@ export default function ElevenLabsVoiceAgent({ onComplete, mode = 'onboarding', 
         widget.removeEventListener('elevenlabs-convai:error', handleDisconnect);
         widget.removeEventListener('elevenlabs-convai:disconnect', handleDisconnect);
         // Explicitly disconnect via widget API if available (frees WS on EL side)
-        try { widget.endSession?.(); } catch {}
+        try { widget.endSession?.(); } catch { }
         widget.remove();
       }
 
