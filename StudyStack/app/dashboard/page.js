@@ -23,10 +23,10 @@ const CounsellingSidebarCard = dynamic(() => import('@/components/CounsellingSid
 const StudentProfileCard = dynamic(() => import('@/components/StudentProfileCard'), { ssr: false });
 
 const AVATARS = [
-  { id: 1, name: "Hulk",       src: "/avatars/hulk.png",       accent: "from-lime-400 to-emerald-500",  ringColor: "ring-emerald-500", desc: "Bold and unstoppable" },
-  { id: 2, name: "Iron Man",   src: "/avatars/ironman.png",    accent: "from-amber-400 to-orange-500",  ringColor: "ring-orange-500",  desc: "Sharp and visionary" },
-  { id: 3, name: "Thor",       src: "/avatars/thor.png",       accent: "from-sky-400 to-blue-500",     ringColor: "ring-sky-500",     desc: "Calm power and focus" },
-  { id: 4, name: "Spider-Man", src: "/avatars/spiderman.png", accent: "from-blue-500 to-indigo-600",  ringColor: "ring-indigo-500",  desc: "Fast, agile, and driven" },
+  { id: 1, name: "Nova",    src: "https://api.dicebear.com/9.x/bottts-neutral/png?seed=Nova&size=256",    accent: "from-rose-400 to-pink-500",    ringColor: "ring-pink-500",    desc: "Friendly and curious" },
+  { id: 2, name: "Blaze",   src: "https://api.dicebear.com/9.x/bottts-neutral/png?seed=Blaze&size=256",   accent: "from-amber-400 to-orange-500",  ringColor: "ring-orange-500",  desc: "Bold and creative" },
+  { id: 3, name: "Echo",    src: "https://api.dicebear.com/9.x/bottts-neutral/png?seed=Echo&size=256",    accent: "from-sky-400 to-blue-500",      ringColor: "ring-sky-500",     desc: "Calm and focused" },
+  { id: 4, name: "Pixel",   src: "https://api.dicebear.com/9.x/bottts-neutral/png?seed=Pixel&size=256",   accent: "from-violet-400 to-indigo-500", ringColor: "ring-indigo-500",  desc: "Quick and sharp" },
 ];
 
 export default function Dashboard() {

@@ -16,7 +16,8 @@ import {
   Brain, TrendingUp, Calendar, Mic, ChevronRight, Play, RotateCcw,
   Settings, GraduationCap, Star, BookOpen, Award, Activity,
   Globe, DollarSign, CheckCircle2, MessageSquare, BarChart2,
-  User, Loader2, RefreshCw, MapPin, Sparkles,
+  User, Loader2, RefreshCw, MapPin, Sparkles, Wallet, Calculator,
+  FileText, ArrowRight, Shield, Percent, Clock, Landmark, Search,
 } from "lucide-react";
 import JourneyPath from "@/components/JourneyPath";
 import { getCounsellingFieldValue } from "@/lib/counselling-profile";
@@ -306,14 +307,10 @@ export default function CompleteDashboard() {
   const aiRadar = ai.radarScores || {};
 
   const avatarAccents = {
-    1: "from-lime-400 to-emerald-500",
+    1: "from-rose-400 to-pink-500",
     2: "from-amber-400 to-orange-500",
     3: "from-sky-400 to-blue-500",
-    4: "from-blue-500 to-indigo-600",
-    hulk: "from-lime-400 to-emerald-500",
-    ironman: "from-amber-400 to-orange-500",
-    thor: "from-sky-400 to-blue-500",
-    spiderman: "from-blue-500 to-indigo-600",
+    4: "from-violet-400 to-indigo-500",
   };
 
   const accent = avatar
@@ -734,6 +731,143 @@ export default function CompleteDashboard() {
           </div>
         </motion.div>
 
+        {/* ── Education Financing Awareness Banner ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.37 }}
+        >
+          <Card className="relative overflow-hidden border-emerald-500/30 bg-linear-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/30 dark:to-teal-950/30 backdrop-blur-sm shadow-lg shadow-emerald-500/5">
+            <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+            <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-teal-500/10 blur-3xl" />
+            <CardContent className="relative p-8">
+              <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+                {/* Left: Financing CTA */}
+                <div className="flex-1">
+                  <div className="mb-4 flex items-center gap-2.5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15">
+                      <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <span className="ivy-font text-xs font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Education Financing</span>
+                  </div>
+                  <h3 className="ivy-font text-2xl font-black text-foreground lg:text-3xl">
+                    Don't let finances hold you back
+                  </h3>
+                  <p className="ivy-font mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                    Get personalised loan offers matched to your profile, compare EMIs across lenders, and plan your education investment with AI-powered financial tools.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => router.push('/dashboard/loan')}
+                      className="h-11 gap-2 bg-emerald-500 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600"
+                    >
+                      <Landmark className="h-4 w-4" />
+                      View Loan Offers
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push('/dashboard/roi')}
+                      className="h-11 gap-2 border-emerald-500/40 px-6 text-sm font-bold text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"
+                    >
+                      <Calculator className="h-4 w-4" />
+                      ROI Calculator
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Right: Quick Stats */}
+                <div className="grid grid-cols-2 gap-3 lg:w-72">
+                  {[
+                    { icon: Percent, label: "Best Rates", value: "8.5%+", desc: "From top lenders", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+                    { icon: Shield, label: "Collateral Free", value: "Up to ₹40L", desc: "No security needed", color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10" },
+                    { icon: Clock, label: "Moratorium", value: "6-12 mo", desc: "Study period grace", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10" },
+                    { icon: FileText, label: "Quick Apply", value: "3 Steps", desc: "AI-assisted docs", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10" },
+                  ].map(({ icon: Icon, label, value, desc, color, bg }) => (
+                    <div key={label} className="rounded-xl border border-border/40 bg-card/60 p-3.5 backdrop-blur-sm">
+                      <div className={`mb-1.5 flex items-center gap-1.5 ${color}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+                      </div>
+                      <p className={`text-lg font-black ${color}`}>{value}</p>
+                      <p className="text-[10px] text-muted-foreground">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ── Quick Tools Row (Explore + ROI + Admission) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.38 }}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+        >
+          {/* AI University Explorer */}
+          <button
+            onClick={() => router.push('/dashboard/explore')}
+            className="group relative overflow-hidden rounded-2xl border border-blue-200/60 dark:border-blue-800/40 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+          >
+            <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-500/10 blur-2xl" />
+            <div className="mb-4 flex items-start justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/15">
+                <Search className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+              </div>
+              <span className="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">AI-Powered</span>
+            </div>
+            <h3 className="ivy-font text-lg font-black text-foreground">University Explorer</h3>
+            <p className="ivy-font mt-1.5 text-sm text-muted-foreground">
+              Discover best-fit universities, courses, and countries based on your profile
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors group-hover:gap-2">
+              Explore Now <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </div>
+          </button>
+
+          {/* ROI Calculator */}
+          <button
+            onClick={() => router.push('/dashboard/roi')}
+            className="group relative overflow-hidden rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+          >
+            <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl" />
+            <div className="mb-4 flex items-start justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15">
+                <Calculator className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
+              </div>
+              <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">Interactive</span>
+            </div>
+            <h3 className="ivy-font text-lg font-black text-foreground">ROI Calculator</h3>
+            <p className="ivy-font mt-1.5 text-sm text-muted-foreground">
+              Compare education cost vs expected salary and calculate payback period
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-colors group-hover:gap-2">
+              Calculate ROI <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </div>
+          </button>
+
+          {/* Loan Intelligence */}
+          <button
+            onClick={() => router.push('/dashboard/loan')}
+            className="group relative overflow-hidden rounded-2xl border border-violet-200/60 dark:border-violet-800/40 bg-linear-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+          >
+            <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-violet-500/10 blur-2xl" />
+            <div className="mb-4 flex items-start justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/15">
+                <Landmark className="h-6 w-6 text-violet-500 dark:text-violet-400" />
+              </div>
+              <span className="rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">Live Data</span>
+            </div>
+            <h3 className="ivy-font text-lg font-black text-foreground">Loan Intelligence</h3>
+            <p className="ivy-font mt-1.5 text-sm text-muted-foreground">
+              AI-matched loan offers, EMI planning, and document checklist
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-sm font-bold text-violet-600 dark:text-violet-400 transition-colors group-hover:gap-2">
+              View Offers <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </div>
+          </button>
+        </motion.div>
+
         {/* ── Journey Path ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -963,6 +1097,134 @@ export default function CompleteDashboard() {
           </motion.div>
         )}
 
+        {/* ── Engagement & Gamification ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.52 }}
+          className="grid grid-cols-1 gap-5 lg:grid-cols-2"
+        >
+          {/* Profile Completion */}
+          <Card className="border-border/40 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">Profile Completion</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your journey progress</p>
+                </div>
+              </div>
+              {(() => {
+                const milestones = [
+                  { label: "Basic Profile", done: !!d.name && d.name !== "Student" },
+                  { label: "Academic Info", done: !!d.education && !!d.gpa },
+                  { label: "Target Countries", done: d.countries.length > 0 },
+                  { label: "Test Scores", done: !d.needsTest },
+                  { label: "Financial Plan", done: !!d.budget && d.budget !== "—" },
+                  { label: "AI Analysis", done: !!analysis },
+                  { label: "Loan Exploration", done: false },
+                ];
+                const doneCount = milestones.filter(m => m.done).length;
+                const pct = Math.round((doneCount / milestones.length) * 100);
+                return (
+                  <>
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground">{doneCount}/{milestones.length} complete</span>
+                      <span className="text-sm font-black text-emerald-500">{pct}%</span>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-muted/30 mb-4">
+                      <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="space-y-2">
+                      {milestones.map((m, i) => (
+                        <div key={i} className="flex items-center gap-2.5">
+                          {m.done ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                          ) : (
+                            <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                          )}
+                          <span className={`text-xs font-semibold ${m.done ? "text-foreground" : "text-muted-foreground"}`}>{m.label}</span>
+                          {!m.done && m.label === "Loan Exploration" && (
+                            <button onClick={() => router.push('/dashboard/loan')} className="ml-auto text-[10px] font-bold text-emerald-500 hover:underline">
+                              Start →
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Engagement Score */}
+          <Card className="border-border/40 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15">
+                  <Sparkles className="h-5 w-5 text-violet-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">Engagement Score</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your platform activity</p>
+                </div>
+              </div>
+              {(() => {
+                const hasProfile = d.name !== "Student";
+                const hasCountries = d.countries.length > 0;
+                const hasTest = !d.needsTest;
+                const hasBudget = d.budget && d.budget !== "—";
+                const hasAI = !!analysis;
+                const engagementScore = [hasProfile, hasCountries, hasTest, hasBudget, hasAI].filter(Boolean).length * 20;
+                const level = engagementScore >= 80 ? "Explorer" : engagementScore >= 60 ? "Planner" : engagementScore >= 40 ? "Starter" : "Newcomer";
+                const levelColor = engagementScore >= 80 ? "text-emerald-500" : engagementScore >= 60 ? "text-sky-500" : engagementScore >= 40 ? "text-amber-500" : "text-muted-foreground";
+                return (
+                  <>
+                    <div className="flex items-center justify-center gap-6 py-4">
+                      <div className="text-center">
+                        <p className={`text-5xl font-black ${levelColor}`}>{engagementScore}</p>
+                        <p className="mt-1 text-xs font-bold text-muted-foreground">/ 100</p>
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-lg font-black ${levelColor}`}>{level}</p>
+                        <p className="text-xs text-muted-foreground">Current Level</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-2.5">
+                      {[
+                        { label: "Complete your profile", pts: 20, done: hasProfile, action: null },
+                        { label: "Set target countries", pts: 20, done: hasCountries, action: null },
+                        { label: "Complete language test", pts: 20, done: hasTest, action: null },
+                        { label: "Set financial plan", pts: 20, done: hasBudget, action: null },
+                        { label: "Explore loan options", pts: 20, done: false, action: () => router.push("/dashboard/loan") },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-muted/15 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {item.done ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />
+                            )}
+                            <span className={`text-xs font-semibold ${item.done ? "text-foreground line-through opacity-60" : "text-foreground"}`}>{item.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold ${item.done ? "text-emerald-500" : "text-muted-foreground"}`}>+{item.pts} pts</span>
+                            {!item.done && item.action && (
+                              <button onClick={item.action} className="text-[10px] font-bold text-violet-500 hover:underline">Go</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* ── Action Center ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -971,7 +1233,7 @@ export default function CompleteDashboard() {
           <Card className="border-border/40 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-7">
               <h2 className="ivy-font mb-6 text-xl font-black text-foreground">Action Center</h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {[
                   {
                     icon: Play,
@@ -983,13 +1245,34 @@ export default function CompleteDashboard() {
                     iconBg: "bg-blue-500/15",
                   },
                   {
-                    icon: RotateCcw,
-                    label: "Retake Assessment",
-                    desc: "Get an updated readiness evaluation",
+                    icon: Search,
+                    label: "Explore Universities",
+                    desc: "AI-powered university discovery",
+                    gradient: "from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30",
+                    border: "border-sky-200/60 dark:border-sky-800/40",
+                    text: "text-sky-600 dark:text-sky-400",
+                    iconBg: "bg-sky-500/15",
+                    action: () => router.push("/dashboard/explore"),
+                  },
+                  {
+                    icon: Calculator,
+                    label: "ROI Calculator",
+                    desc: "Education investment analysis",
+                    gradient: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
+                    border: "border-emerald-200/60 dark:border-emerald-800/40",
+                    text: "text-emerald-600 dark:text-emerald-400",
+                    iconBg: "bg-emerald-500/15",
+                    action: () => router.push("/dashboard/roi"),
+                  },
+                  {
+                    icon: Landmark,
+                    label: "Loan Intelligence",
+                    desc: "AI-matched loan offers & EMI",
                     gradient: "from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30",
                     border: "border-violet-200/60 dark:border-violet-800/40",
                     text: "text-violet-600 dark:text-violet-400",
                     iconBg: "bg-violet-500/15",
+                    action: () => router.push("/dashboard/loan"),
                   },
                   {
                     icon: Settings,
