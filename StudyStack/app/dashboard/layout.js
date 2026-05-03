@@ -40,6 +40,8 @@ export default function DashboardLayout({ children }) {
       ]
     : [
         { label: "Dashboard", link: "/dashboard", ariaLabel: "Student Dashboard" },
+        { label: "Explore", link: "/dashboard/explore", ariaLabel: "University Explorer" },
+        { label: "ROI", link: "/dashboard/roi", ariaLabel: "ROI Calculator" },
         { label: "Loan", link: "/dashboard/loan", ariaLabel: "Loan Intelligence" },
       ];
 
