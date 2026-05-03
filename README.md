@@ -36,11 +36,10 @@
 
 ## 🎬 Demo
 
-Watch the Team Heated Codevalry demo showcasing the StudyStack platform in action:
-
-[![Team Heated Codevalry Demo](https://img.shields.io/badge/▶%20Watch%20Demo-MP4%20Video-red?style=flat-square)](./videos/Team_Heated_Codevalry_Final.mp4)
-
-**Video:** `videos/Team_Heated_Codevalry_Final.mp4` (350 MB)
+<video width="100%" controls>
+  <source src="videos/Team_Heated_Codevalry_Final.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ---
 
