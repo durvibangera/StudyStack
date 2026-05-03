@@ -1183,31 +1183,34 @@ export default function CampaignCanvasPage() {
           />
 
           {/* Top Action Bar */}
-          <Panel position="top-left" className="m-4 backdrop-blur-sm bg-card/90 border border-border rounded-lg shadow-md px-4 py-2 w-auto max-w-[95vw]">
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
-              <Button
-                onClick={() => router.push('/campaign')}
-                variant="outline"
-                size="sm"
-                className="bg-card/80 border-border hover:bg-accent"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back to Brief
-              </Button>
-              
-              <Button
-                onClick={() => router.push('/')}
-                variant="outline"
-                size="sm"
-                className="bg-card/80 border-border hover:bg-accent"
-              >
-                <Home className="w-4 h-4 mr-1" />
-                Home
-              </Button>
-              <div className="flex items-center gap-2 ml-4">
-                <h2 className="text-sm font-semibold text-foreground">Workflow Canvas</h2>
+          <Panel position="top-left" className="m-4 backdrop-blur-sm bg-card/90 border border-border rounded-lg shadow-md px-4 py-2.5 w-auto">
+            <div className="flex flex-col gap-2">
+              {/* Row 1: Navigation + Title */}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => router.push('/campaign')}
+                  variant="outline"
+                  size="sm"
+                  className="bg-card/80 border-border hover:bg-accent h-8"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back to Brief
+                </Button>
+                
+                <Button
+                  onClick={() => router.push('/')}
+                  variant="outline"
+                  size="sm"
+                  className="bg-card/80 border-border hover:bg-accent h-8"
+                >
+                  <Home className="w-4 h-4 mr-1" />
+                  Home
+                </Button>
+                <h2 className="text-sm font-semibold text-foreground ml-2">Workflow Canvas</h2>
               </div>
-              <div className="flex items-center flex-wrap gap-2 md:gap-3 ml-6 p-1.5 rounded-lg bg-muted/60 border border-border shadow-sm">
+
+              {/* Row 2: Action buttons */}
+              <div className="flex items-center flex-wrap gap-2 p-1.5 rounded-lg bg-muted/60 border border-border shadow-sm">
                 {!isSidebarOpen && (
                   <Button
                     variant="ghost"
@@ -1295,7 +1298,7 @@ export default function CampaignCanvasPage() {
           </Panel>
 
           {/* Right Panel: Available Modules (collapsible) */}
-          <Panel position="top-right" style={{ top: '90px', right: '16px' }} className="backdrop-blur-sm bg-card/90 border border-border rounded-lg shadow-md px-3 py-3 w-[360px] max-h-[520px] flex flex-col">
+          <Panel position="top-right" style={{ top: '120px', right: '16px' }} className="backdrop-blur-sm bg-card/90 border border-border rounded-lg shadow-md px-3 py-3 w-[360px] max-h-[520px] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-foreground">Available Modules</h3>
               <Button
