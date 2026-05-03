@@ -36,10 +36,7 @@
 
 ## 🎬 Demo
 
-<video width="100%" controls>
-  <source src="videos/Team_Heated_Codevalry_Final.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[**▶ Watch Team Heated Codevalry Demo** - 350 MB](https://github.com/durvibangera/StudyStack/releases/download/v1.0-demo/Team_Heated_Codevalry_Final.mp4)
 
 ---
 
