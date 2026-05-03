@@ -18,6 +18,7 @@
 
 ## 🧭 Table of Contents
 
+- [Demo](#-demo)
 - [Overview](#-overview)
 - [Core Pillars](#-core-pillars)
 - [System Architecture](#-system-architecture)
@@ -30,6 +31,16 @@
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
 - [Business Model](#-business-model)
+
+---
+
+## 🎬 Demo
+
+Watch the Team Heated Codevalry demo showcasing the StudyStack platform in action:
+
+[![Team Heated Codevalry Demo](https://img.shields.io/badge/▶%20Watch%20Demo-MP4%20Video-red?style=flat-square)](./videos/Team_Heated_Codevalry_Final.mp4)
+
+**Video:** `videos/Team_Heated_Codevalry_Final.mp4` (350 MB)
 
 ---
 
