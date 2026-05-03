@@ -90,10 +90,10 @@ function SelectGrid({ label, name, options, value, onChange, multi = false }) {
 function AvatarBadge({ avatar }) {
   if (!avatar) return null;
   const accents = {
-    hulk:      'from-lime-400 to-emerald-500',
-    ironman:   'from-amber-400 to-orange-500',
-    thor:      'from-sky-400 to-blue-500',
-    spiderman: 'from-blue-500 to-indigo-600',
+    1: 'from-rose-400 to-pink-500',
+    2: 'from-amber-400 to-orange-500',
+    3: 'from-sky-400 to-blue-500',
+    4: 'from-violet-400 to-indigo-500',
   };
   const accent = accents[avatar.id] || 'from-emerald-400 to-teal-500';
   return (
