@@ -36,7 +36,7 @@
 
 ## 🎬 Demo
 
-[**▶ Watch Team Heated Codevalry Demo** - 350 MB](https://github.com/durvibangera/StudyStack/releases/download/v1.0-demo/Team_Heated_Codevalry_Final.mp4)
+[**▶ Team Heated Codevalry Demo** - 350 MB](https://github.com/durvibangera/StudyStack/releases/tag/v1.0-demo)
 
 ---
 
