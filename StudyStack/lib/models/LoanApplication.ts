@@ -55,6 +55,75 @@ export interface IScoreBreakdown {
   coApplicant: number;
 }
 
+export interface IPolicyMatchResult {
+  policyId: string;
+  lenderName: string;
+  productName: string;
+  eligible: boolean;
+  partiallyEligible: boolean;
+  matchScore: number;
+  reasons: { criterion: string; met: boolean; detail: string }[];
+  interestRateRange: string;
+  maxLoanAmountINR: number;
+  collateralRequired: boolean;
+}
+
+export interface IUploadedDocument {
+  documentName: string;
+  cloudinaryUrl: string;
+  uploadedAt: Date;
+  aiValidation: {
+    status: 'valid' | 'issues_found' | 'unreadable' | 'pending';
+    extractedData: Record<string, any>;
+    issues: string[];
+    confidenceScore: number;
+  };
+}
+
+export interface IChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  actions?: { type: string; label: string; data?: any }[];
+}
+
+export interface IScholarship {
+  name: string;
+  provider: string;
+  amount: string;
+  deadline?: string;
+  eligibility: string;
+  applyUrl?: string;
+  sourceUrl?: string;
+  impact?: string;
+  competitiveness?: string;
+}
+
+export interface IForumInsight {
+  title: string;
+  url: string;
+  platform: string;
+  keyTakeaway: string;
+  sentiment?: string;
+  relevanceScore?: number;
+}
+
+export interface IGovernmentScheme {
+  name: string;
+  description: string;
+  benefits: string;
+  eligibility: string;
+  applyUrl?: string;
+  sourceUrl?: string;
+}
+
+export interface ISource {
+  title: string;
+  url: string;
+  sourceType: string;
+  favicon?: string;
+}
+
 export interface ILoanApplication extends Document {
   userId: mongoose.Types.ObjectId;
   eligibilityScore: number;
@@ -70,13 +139,17 @@ export interface ILoanApplication extends Document {
   // Persisted loan intelligence data
   kpis: Record<string, any> | null;
   analysis: Record<string, any> | null;
-  scholarships: Record<string, any>[] | null;
-  forumInsights: Record<string, any>[] | null;
-  governmentSchemes: Record<string, any>[] | null;
+  scholarships: IScholarship[];
+  forumInsights: IForumInsight[];
+  governmentSchemes: IGovernmentScheme[];
   searchParams: Record<string, any> | null;
-  sources: Record<string, any>[] | null;
+  sources: ISource[];
   profileSnapshot: Record<string, any> | null;
   lastAnalyzedAt: Date | null;
+  // Policy-driven loan conversion layer
+  policyMatchResults: IPolicyMatchResult[];
+  uploadedDocuments: IUploadedDocument[];
+  chatHistory: IChatMessage[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -156,13 +229,17 @@ const LoanApplicationSchema = new Schema<ILoanApplication>({
   // Persisted loan intelligence data
   kpis:                 { type: Schema.Types.Mixed, default: null },
   analysis:             { type: Schema.Types.Mixed, default: null },
-  scholarships:         { type: [Schema.Types.Mixed], default: null },
-  forumInsights:        { type: [Schema.Types.Mixed], default: null },
-  governmentSchemes:    { type: [Schema.Types.Mixed], default: null },
+  scholarships:         [Schema.Types.Mixed],
+  forumInsights:        [Schema.Types.Mixed],
+  governmentSchemes:    [Schema.Types.Mixed],
   searchParams:         { type: Schema.Types.Mixed, default: null },
-  sources:              { type: [Schema.Types.Mixed], default: null },
+  sources:              [Schema.Types.Mixed],
   profileSnapshot:      { type: Schema.Types.Mixed, default: null },
   lastAnalyzedAt:       { type: Date, default: null },
+  // Policy-driven loan conversion layer
+  policyMatchResults:   [Schema.Types.Mixed],
+  uploadedDocuments:    [Schema.Types.Mixed],
+  chatHistory:          [Schema.Types.Mixed],
 }, {
   timestamps: true,
 });

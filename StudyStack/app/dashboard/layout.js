@@ -36,6 +36,7 @@ export default function DashboardLayout({ children }) {
   const navItems = role === 'counsellor'
     ? [
         { label: "Dashboard", link: "/dashboard/counsellor", ariaLabel: "Counsellor Dashboard" },
+        { label: "Policies", link: "/dashboard/counsellor/policies", ariaLabel: "Lender Policy Manager" },
         { label: "Campaign AI", link: "/campaign", ariaLabel: "AI Campaign Generator" },
       ]
     : [

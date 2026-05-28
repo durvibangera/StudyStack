@@ -1,4 +1,4 @@
-import { getImageModel } from './gemini';
+import genAI, { getImageModel } from './gemini';
 
 interface VariantSpec {
   key: string;
@@ -78,30 +78,42 @@ function buildVariantPrompt(basePrompt: string, v: VariantSpec): string {
 
 // Generate four images with structured variant prompts
 export async function generateCampaignImages(basePrompt: string) {
-  const model = getImageModel();
+  const modelSpec = getImageModel();
   const outputs: { meta: Omit<GeneratedImageMeta,'file'|'url'>; data: string; mimeType: string }[] = [];
 
   for (const variant of VARIANTS) {
     const prompt = buildVariantPrompt(basePrompt, variant);
-    const result: any = await model.generateContent(prompt);
-    const response: any = await result.response;
-    const parts = response.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((p: any) => p?.inlineData?.mimeType?.startsWith('image/'));
-    if (!imagePart) {
-      continue; // skip if no image returned
+    try {
+      const result: any = await genAI.models.generateContent({
+        model: modelSpec.modelName,
+        contents: prompt,
+        config: {
+          ...modelSpec.config,
+          responseModalities: ['image', 'text'],
+        },
+      });
+      const parts = result.candidates?.[0]?.content?.parts || [];
+      const imagePart = parts.find((p: any) => p?.inlineData?.mimeType?.startsWith('image/'));
+      if (!imagePart) {
+        console.warn(`[imagePrompts] No image returned for variant: ${variant.key}`);
+        continue;
+      }
+      outputs.push({
+        meta: {
+          theme: variant.theme,
+          aspect: variant.aspect,
+          lens: variant.lens,
+          lighting: variant.lighting,
+          color: variant.color,
+          mood: variant.mood,
+        },
+        data: imagePart.inlineData.data,
+        mimeType: imagePart.inlineData.mimeType,
+      });
+    } catch (err: any) {
+      console.error(`[imagePrompts] Failed to generate variant ${variant.key}:`, err.message);
+      continue;
     }
-    outputs.push({
-      meta: {
-        theme: variant.theme,
-        aspect: variant.aspect,
-        lens: variant.lens,
-        lighting: variant.lighting,
-        color: variant.color,
-        mood: variant.mood,
-      },
-      data: imagePart.inlineData.data,
-      mimeType: imagePart.inlineData.mimeType,
-    });
   }
 
   return outputs;
