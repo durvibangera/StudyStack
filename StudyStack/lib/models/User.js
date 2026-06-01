@@ -85,6 +85,29 @@ const UserSchema = new mongoose.Schema({
     default: false
   },
 
+  // Cached Lead Score and Classification
+  leadScore: {
+    type: Number,
+    default: 0
+  },
+  leadClassification: {
+    type: String,
+    enum: ['hot', 'warm', 'cold'],
+    default: 'cold'
+  },
+  sessionCount: {
+    type: Number,
+    default: 0
+  },
+  bookingCount: {
+    type: Number,
+    default: 0
+  },
+  voiceSessionCount: {
+    type: Number,
+    default: 0
+  },
+
   // Persisted AI dashboard analysis so refreshes don't repeatedly call Gemini
   dashboardAnalysis: {
     type: DashboardAnalysisSchema,

@@ -10,6 +10,7 @@ import {
   normalizeCounsellingProfilePatch,
 } from '@/lib/counselling-profile';
 import ConversationMemory from '@/lib/models/ConversationMemory';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 
 /**
  * POST /api/voice-agent/live-extract
@@ -187,8 +188,12 @@ export async function POST(request) {
         },
         { upsert: true, new: true }
       );
+
+      // Recalculate and cache lead score
+      await recalculateAndCacheUserScore(session.user.id);
     } catch (memErr) {
       // non-fatal
+      console.warn('[live-extract] ConversationMemory/scoring save failed:', memErr.message);
     }
 
     return NextResponse.json({

@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import ConversationMemory from '@/lib/models/ConversationMemory';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 import {
   buildCounsellingProgress,
   buildCounsellingSnapshot,
@@ -99,6 +100,11 @@ export async function POST(request) {
         updatedAt: new Date()
       },
       { new: true, runValidators: false }
+    );
+
+    // Recalculate and cache lead score
+    await recalculateAndCacheUserScore(session.user.id).catch((err) =>
+      console.error('[kyc POST] Recalculate score failed:', err.message)
     );
 
     return NextResponse.json({
@@ -216,6 +222,11 @@ export async function PUT(request) {
         updatedAt: new Date()
       },
       { new: true, runValidators: false }
+    );
+
+    // Recalculate and cache lead score
+    await recalculateAndCacheUserScore(session.user.id).catch((err) =>
+      console.error('[kyc PUT] Recalculate score failed:', err.message)
     );
 
     return NextResponse.json({

@@ -33,7 +33,14 @@ export default function LeadCard({ lead, onStatusChange, columnStatus }) {
   const accentBorder = ACCENT_BORDER[columnStatus] || ACCENT_BORDER.new;
 
   return (
-    <div className={`group relative bg-white dark:bg-white/6 backdrop-blur-md border border-gray-200 dark:border-white/10 border-l-4 ${accentBorder} rounded-xl p-4 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer`}>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", lead.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      className={`group relative bg-white dark:bg-white/6 backdrop-blur-md border border-gray-200 dark:border-white/10 border-l-4 ${accentBorder} rounded-xl p-4 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-grab active:cursor-grabbing`}
+    >
       {/* Header: Avatar + Name */}
       <div className="flex items-start gap-3 mb-2">
         <img

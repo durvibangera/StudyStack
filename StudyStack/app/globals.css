@@ -288,6 +288,30 @@
   background-color: hsl(var(--primary) / 0.5);
 }
 
+/* Custom scrollbar for counsellor dashboard modal and transcripts */
+.custom-dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.custom-dashboard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-dashboard-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(99, 102, 241, 0.3);
+  border-radius: 9999px;
+}
+
+.custom-dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.6);
+}
+
 /* Markdown typography refinements for campaign sidebar */
 .campaign-markdown {
   font-size: 0.78rem;

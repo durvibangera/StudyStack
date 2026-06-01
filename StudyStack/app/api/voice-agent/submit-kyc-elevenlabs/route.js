@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 
 export async function POST(request) {
   try {
@@ -39,6 +40,11 @@ export async function POST(request) {
         updatedAt: new Date(),
       },
       { new: true, runValidators: true }
+    );
+
+    // Recalculate and cache lead score
+    await recalculateAndCacheUserScore(session.user.id).catch((err) =>
+      console.error('[submit-kyc-elevenlabs] Recalculate score failed:', err.message)
     );
 
     return NextResponse.json({ success: true, message: 'Profile saved via voice agent' });

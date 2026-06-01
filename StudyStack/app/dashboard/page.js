@@ -217,7 +217,7 @@ export default function Dashboard() {
                 Student Dashboard
               </h1>
               <p className="ivy-font max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                Live counselling data from Anam AI, persisted in MongoDB and ready to resume when anything is still missing.
+                Live counselling data from the voice agent, persisted and ready to resume when anything is still missing.
               </p>
             </div>
           </div>
