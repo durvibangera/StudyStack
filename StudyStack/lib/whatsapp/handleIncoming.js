@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Booking from '@/lib/models/Booking';
 import CounsellorSession from '@/lib/models/CounsellorSession';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 import WhatsAppState from '@/lib/models/WhatsAppState';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/sendMessage';
 import { GoogleGenAI } from '@google/genai';
@@ -292,6 +293,12 @@ export async function handleIncomingMessage(phoneNumber, messageText) {
         notes: `Booked via WhatsApp on ${new Date().toLocaleDateString('en-IN')}`,
       });
 
+      if (user?._id) {
+        await recalculateAndCacheUserScore(user._id).catch((err) =>
+          console.error('[whatsapp confirm booking] Recalculate score failed:', err.message)
+        );
+      }
+
       // Reset state
       state.step = 'idle';
       state.pendingDate = null;
@@ -381,6 +388,12 @@ export async function handleIncomingMessage(phoneNumber, messageText) {
 
     latestBooking.status = 'cancelled';
     await latestBooking.save();
+
+    if (latestBooking.userId) {
+      await recalculateAndCacheUserScore(latestBooking.userId).catch((err) =>
+        console.error('[whatsapp cancel booking] Recalculate score failed:', err.message)
+      );
+    }
 
     await sendWhatsAppMessage(
       phoneNumber,

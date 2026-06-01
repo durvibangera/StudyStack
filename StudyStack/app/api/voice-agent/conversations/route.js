@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import ConversationMemory from '@/lib/models/ConversationMemory';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 
 // Save a conversation after it ends
 export async function POST(request) {
@@ -128,6 +129,11 @@ Respond ONLY with valid JSON, no markdown.`,
         transcriptText,
       },
       { upsert: true, new: true }
+    );
+
+    // Recalculate and cache lead score
+    await recalculateAndCacheUserScore(session.user.id).catch((err) =>
+      console.error('[conversations] Recalculate score failed:', err.message)
     );
 
     return NextResponse.json({ success: true, id: doc._id });

@@ -93,7 +93,7 @@ export default function CounsellorPage() {
   if (session?.user?.role !== 'counsellor') return null;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <KanbanBoard key={refreshKey} />
 
       {/* Add Lead Modal */}

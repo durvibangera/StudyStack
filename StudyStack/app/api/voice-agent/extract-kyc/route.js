@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import ConversationMemory from '@/lib/models/ConversationMemory';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 import {
   buildCounsellingFactMap,
   buildCounsellingProgress,
@@ -216,9 +217,12 @@ Respond ONLY with valid JSON.`;
         },
         { upsert: true, new: true }
       );
+
+      // Recalculate and cache lead score
+      await recalculateAndCacheUserScore(session.user.id);
     } catch (memErr) {
       // Non-fatal: KYC data is already saved; memory save failure is acceptable.
-      console.warn('[extract-kyc] ConversationMemory save failed:', memErr.message);
+      console.warn('[extract-kyc] ConversationMemory/scoring save failed:', memErr.message);
     }
 
     return NextResponse.json({

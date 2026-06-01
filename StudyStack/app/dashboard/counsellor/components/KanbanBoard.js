@@ -273,6 +273,58 @@ export default function KanbanBoard() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [bookings, setBookings] = useState([]);
 
+  // Import Students States
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importableStudents, setImportableStudents] = useState([]);
+  const [loadingImportable, setLoadingImportable] = useState(false);
+  const [selectedImportIds, setSelectedImportIds] = useState([]);
+  const [importSubmitting, setImportSubmitting] = useState(false);
+
+  const fetchImportableStudents = useCallback(async () => {
+    setLoadingImportable(true);
+    try {
+      const res = await fetch("/api/counsellor/import-students");
+      if (res.ok) {
+        const data = await res.json();
+        setImportableStudents(data);
+        setSelectedImportIds([]);
+      }
+    } catch (err) {
+      console.error("Error fetching importable students:", err);
+    } finally {
+      setLoadingImportable(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showImportModal) {
+      fetchImportableStudents();
+    }
+  }, [showImportModal, fetchImportableStudents]);
+
+  const handleImportSubmit = async () => {
+    if (selectedImportIds.length === 0) return;
+    setImportSubmitting(true);
+    try {
+      const res = await fetch("/api/counsellor/import-students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedImportIds }),
+      });
+      if (res.ok) {
+        setShowImportModal(false);
+        fetchLeads();
+      } else {
+        alert("Failed to import students");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error importing students");
+    } finally {
+      setImportSubmitting(false);
+    }
+  };
+
   const fetchLeads = useCallback(async () => {
     try {
       setError(null);
@@ -318,6 +370,16 @@ export default function KanbanBoard() {
     // Re-fetch bookings every 15s so new WhatsApp bookings appear dynamically
     const interval = setInterval(fetchBookings, 15000);
     return () => clearInterval(interval);
+  }, [fetchLeads, fetchDashboardData, fetchBookings]);
+
+  useEffect(() => {
+    const handler = () => {
+      fetchLeads();
+      fetchDashboardData();
+      fetchBookings();
+    };
+    window.addEventListener("refreshCounsellorData", handler);
+    return () => window.removeEventListener("refreshCounsellorData", handler);
   }, [fetchLeads, fetchDashboardData, fetchBookings]);
 
   const handleStatusChange = async (leadId, newStatus) => {
@@ -525,18 +587,29 @@ export default function KanbanBoard() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Counsellor Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage leads, campaigns, and your schedule</p>
         </div>
-        <button
-          onClick={() => {
-            const event = new CustomEvent("openAddLeadModal");
-            window.dispatchEvent(event);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-600/20 transition-all duration-200 hover:shadow-blue-600/40"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Lead
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-sm font-semibold rounded-lg transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Import Students
+          </button>
+          <button
+            onClick={() => {
+              const event = new CustomEvent("openAddLeadModal");
+              window.dispatchEvent(event);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:shadow-emerald-600/40"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Lead
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -550,7 +623,7 @@ export default function KanbanBoard() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
               activeTab === tab.id
-                ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400"
+                ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 dark:border-emerald-400"
                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
@@ -581,14 +654,14 @@ export default function KanbanBoard() {
             <select
               value={regionFilter}
               onChange={(e) => setRegionFilter(e.target.value)}
-              className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
             <select
               value={courseFilter}
               onChange={(e) => setCourseFilter(e.target.value)}
-              className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               {courses.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -751,6 +824,133 @@ export default function KanbanBoard() {
                     </button>
                   ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg mx-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowImportModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-10"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="p-6 border-b border-gray-100 dark:border-white/5">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Import Registered Students</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Select registered students to add them to your leads pipeline.</p>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-dashboard-scrollbar max-h-[50vh]">
+              {loadingImportable ? (
+                <div className="py-8 flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Fetching students list...</p>
+                </div>
+              ) : importableStudents.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No new students available to import</p>
+                </div>
+              ) : (
+                importableStudents.map((stud) => {
+                  const isSelected = selectedImportIds.includes(stud._id);
+                  return (
+                    <button
+                      key={stud._id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedImportIds((prev) =>
+                          isSelected ? prev.filter((id) => id !== stud._id) : [...prev, stud._id]
+                        );
+                      }}
+                      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? "border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10"
+                          : "border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-50/50 dark:bg-white/2"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        {stud.image ? (
+                          <img src={stud.image} alt={stud.name} className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-bold shadow-xs">
+                            {stud.name[0].toUpperCase()}
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-800 dark:text-white">{stud.name}</h4>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{stud.email}</p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                              stud.hasCompletedKYC
+                                ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                                : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+                            }`}>
+                              {stud.hasCompletedKYC ? "KYC Complete" : "KYC Pending"}
+                            </span>
+                            {stud.course && (
+                              <span className="text-[9px] text-gray-400 truncate max-w-[120px]">
+                                📚 {stud.course}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Checkbox Icon */}
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                        isSelected
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-gray-300 dark:border-white/20"
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 dark:bg-white/2 border-t border-gray-100 dark:border-white/5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={importSubmitting || selectedImportIds.length === 0}
+                onClick={handleImportSubmit}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-md transition-all flex items-center gap-1.5"
+              >
+                {importSubmitting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  `Import Selected (${selectedImportIds.length})`
+                )}
+              </button>
             </div>
           </div>
         </div>

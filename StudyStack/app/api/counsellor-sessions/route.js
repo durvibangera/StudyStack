@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import CounsellorSession from '@/lib/models/CounsellorSession';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 
 function getEmbedId(embedUrl) {
   if (!embedUrl || typeof embedUrl !== 'string') return '';
@@ -41,6 +42,11 @@ export async function POST(request) {
       startedAt: new Date(),
       lastEventAt: new Date(),
     });
+
+    // Recalculate and cache lead score
+    await recalculateAndCacheUserScore(session.user.id).catch((err) =>
+      console.error('[counsellor-sessions] Recalculate score failed:', err.message)
+    );
 
     return NextResponse.json({
       success: true,

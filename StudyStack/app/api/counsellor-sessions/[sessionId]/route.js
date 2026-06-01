@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import CounsellorSession from '@/lib/models/CounsellorSession';
 import User from '@/lib/models/User';
+import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
 import { getFlashModel } from '@/lib/gemini';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/sendMessage';
 
@@ -321,4 +322,9 @@ Respond ONLY in this JSON format:
   } catch (whatsappErr) {
     console.error('[counsellor-session] WhatsApp send failed:', whatsappErr.message);
   }
+
+  // Recalculate and cache lead score after session completion
+  await recalculateAndCacheUserScore(userId).catch((err) =>
+    console.error('[counsellor-session] Recalculate score failed:', err.message)
+  );
 }
