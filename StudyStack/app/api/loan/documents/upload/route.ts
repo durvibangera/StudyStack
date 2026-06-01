@@ -193,11 +193,39 @@ RULES:
 
       await existingApp.save();
     } else {
-      await LoanApplication.create({
-        userId: session.user.id,
-        uploadedDocuments: [uploadedDoc],
-        applicationStatus: 'docs_pending',
-      });
+      try {
+        await LoanApplication.create({
+          userId: session.user.id,
+          uploadedDocuments: [uploadedDoc],
+          applicationStatus: 'docs_pending',
+        });
+      } catch (err: any) {
+        if (err.code === 11000) {
+          const concurrentApp = await LoanApplication.findOne({ userId: session.user.id });
+          if (concurrentApp) {
+            concurrentApp.uploadedDocuments = concurrentApp.uploadedDocuments || [];
+            (concurrentApp.uploadedDocuments as any[]).push(uploadedDoc);
+            concurrentApp.markModified('uploadedDocuments');
+
+            const checklist = (concurrentApp.documentChecklist || []) as any[];
+            const docIdx = checklist.findIndex((d: any) =>
+              d.name.toLowerCase() === documentName.toLowerCase()
+            );
+            if (docIdx !== -1) {
+              checklist[docIdx].status = docStatus;
+              concurrentApp.documentChecklist = checklist;
+              concurrentApp.markModified('documentChecklist');
+            }
+
+            if (concurrentApp.applicationStatus === 'not_started') {
+              concurrentApp.applicationStatus = 'docs_pending';
+            }
+            await concurrentApp.save();
+          }
+        } else {
+          throw err;
+        }
+      }
     }
 
     return NextResponse.json({

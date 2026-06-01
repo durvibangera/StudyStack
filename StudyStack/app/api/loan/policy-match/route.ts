@@ -334,10 +334,21 @@ export async function POST(request: Request) {
       existingApp.markModified('policyMatchResults');
       await existingApp.save();
     } else {
-      await LoanApplication.create({
-        userId: session.user.id,
-        policyMatchResults: matches,
-      });
+      try {
+        await LoanApplication.create({
+          userId: session.user.id,
+          policyMatchResults: matches,
+        });
+      } catch (err: any) {
+        if (err.code === 11000) {
+          await LoanApplication.updateOne(
+            { userId: session.user.id },
+            { $set: { policyMatchResults: matches } }
+          );
+        } else {
+          throw err;
+        }
+      }
     }
 
     return NextResponse.json({
