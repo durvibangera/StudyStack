@@ -104,7 +104,7 @@ export async function POST(request) {
 
     const prompt = `You are extracting structured student facts from an ongoing overseas education counselling call.
 
-  The transcript may be in English, Hindi, Hinglish (mixed Hindi-English), or Marathi. Extract information regardless of the language used. Translate Hindi/Marathi values to English for the JSON output.
+  The transcript may be in English, Hindi, Hinglish (mixed Hindi-English), Marathi, Tamil, Kannada, Telugu, Bengali, Gujarati, Urdu, Punjabi, or Malayalam. Extract information regardless of the language used. Translate non-English values to English for the JSON output.
 
   Return VALID JSON matching this template exactly:
   ${EXTRACTION_TEMPLATE}

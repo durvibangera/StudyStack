@@ -95,7 +95,7 @@ export async function POST(request) {
 
     const prompt = `You are a precise extraction engine for an overseas education counselling call.
 
-The transcript may be in English, Hindi, Hinglish (mixed Hindi-English), or Marathi. Extract information regardless of the language used. Translate Hindi/Marathi values to English for the JSON output.
+The transcript may be in English, Hindi, Hinglish (mixed Hindi-English), Marathi, Tamil, Kannada, Telugu, Bengali, Gujarati, Urdu, Punjabi, or Malayalam. Extract information regardless of the language used. Translate non-English values to English for the JSON output.
 
 Extract ONLY the student facts that were explicitly stated by the student in the transcript.
 Do not infer, guess, or copy the agent's suggestions as if they were the student's answers.
