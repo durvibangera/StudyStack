@@ -24,6 +24,7 @@ export default function FloatingCounsellor() {
 
   const handleComplete = useCallback(() => {
     setIsOpen(false);
+    window.dispatchEvent(new CustomEvent('counsellor:completed'));
   }, []);
 
   if (isOpen) {

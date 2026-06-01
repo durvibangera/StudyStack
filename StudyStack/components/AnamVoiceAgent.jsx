@@ -169,7 +169,15 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
 
       // 20s timeout to prevent infinite spinner
       const abort = new AbortController();
-      const tid = setTimeout(() => abort.abort(), 20000);
+      let forceCompleted = false;
+      const tid = setTimeout(() => {
+        forceCompleted = true;
+        abort.abort();
+        toast.error('Extraction timed out. You can fill your profile manually.');
+        window.setTimeout(() => {
+          if (!cancelledRef.current) onCompleteRef.current?.();
+        }, 1500);
+      }, 20000);
 
       const res = await fetch('/api/voice-agent/extract-kyc', {
         method: 'POST',
@@ -183,6 +191,7 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
       });
 
       clearTimeout(tid);
+      if (forceCompleted) return;
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
 

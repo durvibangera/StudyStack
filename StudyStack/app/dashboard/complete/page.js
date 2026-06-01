@@ -272,14 +272,14 @@ export default function CompleteDashboard() {
   }, []);
 
   // Fetch AI analysis from Gemini
-  const fetchAnalysis = useCallback(async (profileData) => {
+  const fetchAnalysis = useCallback(async (profileData, forceRefresh = false) => {
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
       const res = await fetch("/api/dashboard/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile: profileData }),
+        body: JSON.stringify({ profile: profileData, refresh: forceRefresh }),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -301,74 +301,86 @@ export default function CompleteDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const res = await fetch("/api/kyc", { cache: "no-store" });
-        if (!res.ok) {
-          router.push("/dashboard");
-          return;
-        }
-        const data = await res.json();
-        const progress = data.counsellingProgress || {};
-        if (!progress.isComplete) {
-          router.push("/dashboard");
-          return;
-        }
-        const p = data.studentProfile || {};
-        setProfile(p);
-        // Trigger Gemini analysis
-        fetchAnalysis(p);
-
-        // Fetch Gamification status
-        fetch("/api/gamification/status")
-          .then(r => r.json())
-          .then(data => {
-            if (!data.error) {
-              setGameStatus(data);
-              
-              // 1. Process pending referral
-              const pendingRef = localStorage.getItem('referral_code');
-              if (pendingRef) {
-                fetch("/api/gamification/referral", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ code: pendingRef })
-                }).then(r => r.json()).then(refData => {
-                  if (refData.success) {
-                    window.dispatchEvent(new CustomEvent('gamification:event', {
-                      detail: { type: 'AWARD', data: { xpAwarded: refData.bonusXP, reason: 'Welcome Bonus! 🎉', levelUp: false, level: 1 } }
-                    }));
-                  }
-                  localStorage.removeItem('referral_code');
-                });
-              }
-
-              // 2. Check daily streak automatically
-              fetch("/api/gamification/award", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "streak_checkin" })
-              })
-              .then(ar => ar.json())
-              .then(awData => {
-                if (!awData.error && awData.xpAwarded > 0) {
-                  window.dispatchEvent(new CustomEvent('gamification:event', {
-                    detail: { type: 'AWARD', data: { ...awData, reason: 'Daily Check-in Streak! 🔥' } }
-                  }));
-                }
-              });
-            }
-          });
-
-      } catch {
+  const fetchProfileAndGamification = useCallback(async (isRefresh = false) => {
+    try {
+      const res = await fetch("/api/kyc", { cache: "no-store" });
+      if (!res.ok) {
         router.push("/dashboard");
-      } finally {
-        setLoading(false);
+        return;
       }
+      const data = await res.json();
+      const progress = data.counsellingProgress || {};
+      if (!progress.isComplete) {
+        router.push("/dashboard");
+        return;
+      }
+      const p = data.studentProfile || {};
+      setProfile(p);
+      
+      // Trigger Gemini analysis (force refresh if isRefresh is true)
+      fetchAnalysis(p, isRefresh);
+
+      // Fetch Gamification status
+      const gameRes = await fetch("/api/gamification/status");
+      const gameData = await gameRes.json();
+      if (!gameData.error) {
+        setGameStatus(gameData);
+        
+        // 1. Process pending referral
+        const pendingRef = localStorage.getItem('referral_code');
+        if (pendingRef) {
+          fetch("/api/gamification/referral", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: pendingRef })
+          }).then(r => r.json()).then(refData => {
+            if (refData.success) {
+              window.dispatchEvent(new CustomEvent('gamification:event', {
+                detail: { type: 'AWARD', data: { xpAwarded: refData.bonusXP, reason: 'Welcome Bonus! 🎉', levelUp: false, level: 1 } }
+              }));
+            }
+            localStorage.removeItem('referral_code');
+          });
+        }
+
+        // 2. Check daily streak automatically
+        fetch("/api/gamification/award", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "streak_checkin" })
+        })
+        .then(ar => ar.json())
+        .then(awData => {
+          if (!awData.error && awData.xpAwarded > 0) {
+            window.dispatchEvent(new CustomEvent('gamification:event', {
+              detail: { type: 'AWARD', data: { ...awData, reason: 'Daily Check-in Streak! 🔥' } }
+            }));
+          }
+        });
+      }
+    } catch {
+      router.push("/dashboard");
+    } finally {
+      setLoading(false);
     }
-    fetchProfile();
   }, [router, fetchAnalysis]);
+
+  useEffect(() => {
+    fetchProfileAndGamification(false);
+  }, [fetchProfileAndGamification]);
+
+  // Listen to profile updates and counsellor session completions to refresh timeline
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchProfileAndGamification(false);
+    };
+    window.addEventListener('counselling-profile:updated', handleUpdate);
+    window.addEventListener('counsellor:completed', handleUpdate);
+    return () => {
+      window.removeEventListener('counselling-profile:updated', handleUpdate);
+      window.removeEventListener('counsellor:completed', handleUpdate);
+    };
+  }, [fetchProfileAndGamification]);
 
   if (loading || !profile) {
     return (
@@ -767,15 +779,27 @@ export default function CompleteDashboard() {
                     <Loader2 className="h-3 w-3 animate-spin" /> Analyzing...
                   </span>
                 ) : (
-                  <span className="ml-auto rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/25">
-                    {analysisMeta.cached
-                      ? "Cached"
-                      : analysisMeta.usedGemini
-                      ? "Gemini 2.5 Pro"
-                      : analysis
-                      ? "Local Rules"
-                      : "Live"}
-                  </span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                      onClick={() => fetchProfileAndGamification(true)}
+                      title="Force refresh analysis"
+                      disabled={analyzing}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/25">
+                      {analysisMeta.cached
+                        ? "Cached"
+                        : analysisMeta.usedGemini
+                        ? "Gemini 2.5 Pro"
+                        : analysis
+                        ? "Local Rules"
+                        : "Live"}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -1123,14 +1147,6 @@ export default function CompleteDashboard() {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => router.push("/dashboard/counsellor/logs")}
-                    className="h-8 text-xs font-semibold"
-                  >
-                    View Logs
-                  </Button>
-                  <Button
-                    size="sm"
                     onClick={() => window.dispatchEvent(new Event('open-counsellor'))}
                     className="h-8 gap-1.5 bg-cyan-500 text-white hover:bg-cyan-600 text-xs font-bold"
                   >
@@ -1167,7 +1183,7 @@ export default function CompleteDashboard() {
                   size="sm"
                   variant="outline"
                   disabled={analyzing}
-                  onClick={() => fetchAnalysis(profile)}
+                  onClick={() => fetchProfileAndGamification(true)}
                   className="h-8 gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20"
                 >
                   <RefreshCw className={`h-3 w-3 ${analyzing ? "animate-spin" : ""}`} /> Refresh

@@ -68,15 +68,15 @@ export default function Dashboard() {
       const profile = data.studentProfile || null;
       const progress = data.counsellingProgress || { filledCount: 0, totalCount: 0, isComplete: false };
       const hasCounsellingData = (progress.filledCount || 0) > 0;
-      const hasAnyProfileData = !!(profile && Object.keys(profile).length > 0);
 
       setStudentProfile(profile);
       setLatestConversation(data.latestConversation || null);
       setCounsellingProgress(progress);
 
-      if (progress.isComplete || (data.hasCompletedKYC && !hasCounsellingData)) {
+      const isComplete = progress.isComplete || (data.hasCompletedKYC && !hasCounsellingData);
+      if (isComplete) {
         setKycStatus('completed');
-      } else if (hasCounsellingData || hasAnyProfileData) {
+      } else if (hasCounsellingData) {
         setKycStatus('in-progress');
       } else {
         setKycStatus('new');

@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import LoanApplication from '@/lib/models/LoanApplication';
+import ConversationMemory from '@/lib/models/ConversationMemory';
 
 /* ────────────────────────────────────────────────────────────────────────────
  *  POST /api/loan/search-offers
@@ -107,11 +108,29 @@ export async function GET() {
     }
 
     await dbConnect();
-    const app = await LoanApplication.findOne({ userId: (session as any).user.id }).lean();
+    const app = await (LoanApplication as any).findOne({ userId: (session as any).user.id }).lean();
 
     if (!app || !app.lastAnalyzedAt) {
       return NextResponse.json({ cached: false });
     }
+
+    // Check for updates since last analysis
+    const [user, latestConv] = await Promise.all([
+      (User as any).findById((session as any).user.id).select('updatedAt').lean(),
+      (ConversationMemory as any).findOne({ userId: (session as any).user.id })
+        .sort({ createdAt: -1 })
+        .select('createdAt')
+        .lean(),
+    ]);
+
+    const userUpdatedAt = user?.updatedAt ? new Date(user.updatedAt).getTime() : 0;
+    const latestConvTime = latestConv?.createdAt ? new Date(latestConv.createdAt).getTime() : 0;
+    const lastAnalyzedTime = app.lastAnalyzedAt ? new Date(app.lastAnalyzedAt).getTime() : 0;
+
+    if (latestConvTime > lastAnalyzedTime || userUpdatedAt > lastAnalyzedTime) {
+      return NextResponse.json({ cached: false });
+    }
+
 
     return NextResponse.json({
       cached: true,
@@ -145,7 +164,7 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
-    const user = await User.findById((session as any).user.id).lean();
+    const user = await (User as any).findById((session as any).user.id).lean();
     if (!user?.studentProfile) {
       return NextResponse.json({ error: 'Complete your profile first' }, { status: 400 });
     }
@@ -539,7 +558,7 @@ Respond ONLY with valid JSON. No markdown code fences.`;
       lastAnalyzedAt: new Date(),
     };
 
-    const existingApp = await LoanApplication.findOne({ userId: (session as any).user.id });
+    const existingApp = await (LoanApplication as any).findOne({ userId: (session as any).user.id });
     if (existingApp) {
       Object.assign(existingApp, updatePayload);
       // Only reset document checklist if it was empty
@@ -563,7 +582,7 @@ Respond ONLY with valid JSON. No markdown code fences.`;
         });
       } catch (err: any) {
         if (err.code === 11000) {
-          const concurrentApp = await LoanApplication.findOne({ userId: (session as any).user.id });
+          const concurrentApp = await (LoanApplication as any).findOne({ userId: (session as any).user.id });
           if (concurrentApp) {
             Object.assign(concurrentApp, updatePayload);
             if (!concurrentApp.documentChecklist || concurrentApp.documentChecklist.length === 0) {

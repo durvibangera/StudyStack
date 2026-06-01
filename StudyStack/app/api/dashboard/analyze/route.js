@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import dbConnect from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import ConversationMemory from "@/lib/models/ConversationMemory";
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -512,7 +513,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { profile } = await request.json();
+    const { profile, refresh } = await request.json();
     if (!profile || typeof profile !== "object") {
       return NextResponse.json({ error: "Profile data required" }, { status: 400 });
     }
@@ -538,10 +539,28 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const user = await User.findById(session.user.id).select("dashboardAnalysis").lean();
+    const user = await User.findById(session.user.id).select("dashboardAnalysis updatedAt").lean();
     const cached = user?.dashboardAnalysis;
 
+    let bypassCache = !!refresh;
+
+    if (!bypassCache && cached?.generatedAt) {
+      const latestConv = await ConversationMemory.findOne({ userId: session.user.id })
+        .sort({ createdAt: -1 })
+        .select("createdAt")
+        .lean();
+      
+      const userUpdatedAt = user?.updatedAt ? new Date(user.updatedAt).getTime() : 0;
+      const latestConvTime = latestConv?.createdAt ? new Date(latestConv.createdAt).getTime() : 0;
+      const cacheGeneratedAt = new Date(cached.generatedAt).getTime();
+
+      if (latestConvTime > cacheGeneratedAt || userUpdatedAt > cacheGeneratedAt) {
+        bypassCache = true;
+      }
+    }
+
     if (
+      !bypassCache &&
       cached?.analysis &&
       cached?.profileFingerprint &&
       cached.profileFingerprint === profileFingerprint
@@ -558,28 +577,6 @@ export async function POST(request) {
 
     const baseAnalysis = buildRuleBasedAnalysis(profileSummary, missingFields);
 
-    // If the profile is complete, skip Gemini to avoid unnecessary usage.
-    if (missingFields.length === 0) {
-      await User.findByIdAndUpdate(session.user.id, {
-        dashboardAnalysis: {
-          profileFingerprint,
-          missingFields,
-          source: "local",
-          model: "local-rules",
-          generatedAt: new Date(),
-          analysis: baseAnalysis,
-        },
-      });
-
-      return NextResponse.json({
-        analysis: baseAnalysis,
-        generatedAt: new Date().toISOString(),
-        cached: false,
-        source: "local",
-        usedGemini: false,
-        missingFields,
-      });
-    }
 
     const prompt = buildPrompt(profileSummary, missingFields);
 

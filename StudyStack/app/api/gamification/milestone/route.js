@@ -30,17 +30,29 @@ export async function POST(req) {
 
     if (!g.milestoneFlags?.ieltsScoreAdded && 
        (text.includes('ielts') || text.includes('toefl')) && 
-       (text.includes('gave the exam') || text.includes('score') || text.includes('band'))) {
+       (text.includes('gave the exam') || text.includes('score') || text.includes('band') || text.includes('taken') || text.includes('completed'))) {
       triggeredMilestone = 'IELTS/TOEFL Test';
       awardAction = 'ielts_score_added';
     } 
+    else if (!g.milestoneFlags?.shortlistDone && 
+            (text.includes('shortlist') || text.includes('university list') || text.includes('shortlisted')) && 
+            (text.includes('done') || text.includes('completed') || text.includes('finalized') || text.includes('ready'))) {
+      triggeredMilestone = 'University Shortlist';
+      awardAction = 'shortlist_done';
+    }
+    else if (!g.milestoneFlags?.sopDone && 
+            (text.includes('sop') || text.includes('lor') || text.includes('statement of purpose') || text.includes('recommendation letter')) && 
+            (text.includes('done') || text.includes('completed') || text.includes('ready') || text.includes('written') || text.includes('prepared'))) {
+      triggeredMilestone = 'SOP and LOR Set';
+      awardAction = 'sop_done';
+    }
     else if (!g.milestoneFlags?.applicationSubmitted && 
-            (text.includes('applied to') || text.includes('submitted application'))) {
+            (text.includes('applied to') || text.includes('submitted application') || text.includes('submitted applications') || text.includes('application submitted'))) {
       triggeredMilestone = 'Application Submitted';
       awardAction = 'application_submitted';
     }
     else if (!g.milestoneFlags?.visaDone && 
-            (text.includes('got my visa') || text.includes('visa approved'))) {
+            (text.includes('got my visa') || text.includes('visa approved') || text.includes('visa is done') || text.includes('visa complete'))) {
       triggeredMilestone = 'Visa Approved';
       awardAction = 'visa_done';
     }

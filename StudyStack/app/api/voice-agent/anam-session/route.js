@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import ConversationMemory from '@/lib/models/ConversationMemory';
+import LoanApplication from '@/lib/models/LoanApplication';
 import {
   COUNSELLING_FIELDS,
   buildCounsellingProgress,
@@ -156,13 +157,14 @@ You need to collect these 13 fields through natural conversation. To keep it con
 12. **Budget Range**
 13. **Application Timeline**
 
-## PERSONALIZED GUIDANCE
-If the student is logged in and you have their context, provide relevant recommendations:
+## PERSONALIZED GUIDANCE & EDUCATION JOURNEY
+If the student is logged in and you have their context:
+- Acknowledge and guide them based on their current stage in the education journey (check "## Education Journey Progress" below). For example, if they haven't completed their shortlist, encourage them to discuss that. If they are ready for loans, guide them there.
+- Discuss loan options based on the Exa AI matched loan offers under "## Education Loan Details & Offers" below. If offers exist, mention them specifically (lender name, rate range, max amount, match reason). If no matched offers exist yet (no Exa search run), give generic education loan advice (e.g., advising on interest rates, collateral vs non-collateral, and planning their budget).
 - Suggest specific universities based on their profile, GPA, and target country
 - Recommend scholarships they may be eligible for
-- Advise on loan options based on their budget range
 - Give timeline-specific advice (visa deadlines, application windows)
-- Discuss their financial condition sensitively and suggest options
+- Discuss their financial condition sensitively
 
 ## CONVERSATION STYLE
 - Be warm, enthusiastic, and encouraging — like a helpful older sibling
@@ -221,16 +223,16 @@ function buildBuddySystemPrompt(memoryContext, studentName, userProfile) {
 
 You are Aria, StudyStack's friendly AI study-abroad counsellor and virtual assistant. You appear as a warm, professional female avatar. You are available on-demand to help the student with ANY question about their study abroad journey.
 
-## YOUR ROLE
-You are the student's personal AI counsellor. You have access to their full profile and conversation history. Your job is to:
+## YOUR ROLE & EDUCATION JOURNEY
+You are the student's personal AI counsellor. You have access to their full profile, conversation history, education journey, and loan options. Your job is to:
+- Acknowledge and guide them based on their current stage in the education journey (check "## Education Journey Progress" below). Continue the conversation based on their progress.
+- Discuss loan options based on the Exa AI matched loan offers under "## Education Loan Details & Offers" below. If offers exist, mention them specifically (lender name, rate range, max amount, match reason). If no matched offers exist yet (no Exa search run), give generic education loan advice (e.g., advising on interest rates, collateral vs non-collateral, and planning their budget).
 - Answer questions about universities, programs, and admission requirements
 - Provide guidance on scholarship and funding opportunities
-- Explain the loan application process and options
 - Help with visa application guidance and timeline
 - Discuss SOP/LOR writing strategies
 - Give advice on living abroad, accommodation, and budgeting
-- Provide emotional support and motivation during the application process
-- Give specific, actionable advice based on their profile
+- Provide emotional support and motivation
 
 ## LANGUAGE RULES (CRITICAL — MULTILINGUAL SUPPORT)
 - You MUST match the student's language. If they speak Hindi, reply in Hindi. If they speak Hinglish (mixed Hindi-English), reply in Hinglish. If they speak any Indian language, reply in that language. If they speak English, reply in English.
@@ -273,7 +275,7 @@ ${profileSummary || 'No profile data available yet.'}
 ${memoryContext || `First buddy conversation with ${name}.`}`;
 }
 
-function buildMemoryContext(user, conversations) {
+function buildMemoryContext(user, loanApp, conversations) {
   const snapshot = buildCounsellingSnapshot(user.studentProfile || {});
   const lines = [`Name: ${snapshot.studentName || user.name}`];
 
@@ -310,6 +312,46 @@ function buildMemoryContext(user, conversations) {
 
   const counsellingProgress = buildCounsellingProgress(user.studentProfile || {});
 
+  // Journey milestones tracking
+  const milestones = user.gamification?.milestoneFlags || {};
+  const journeyProgressLines = [
+    `- Profile Completion: ${milestones.profileComplete ? 'Completed' : 'In Progress'}`,
+    `- First Session Booked/Completed: ${milestones.firstSession ? 'Completed' : 'Not Started'}`,
+    `- Language Test (IELTS/TOEFL) Score Added: ${milestones.ieltsScoreAdded ? 'Completed' : 'Not Started'}`,
+    `- University Shortlist Finalized: ${milestones.shortlistDone ? 'Completed' : 'Not Started'}`,
+    `- SOP & LOR Documents Ready: ${milestones.sopDone ? 'Completed' : 'Not Started'}`,
+    `- University Application Submitted: ${milestones.applicationSubmitted ? 'Completed' : 'Not Started'}`,
+    `- Visa Process Done: ${milestones.visaDone ? 'Completed' : 'Not Started'}`,
+  ];
+
+  // Loan application and Exa AI search matches tracking
+  const loanContextLines = [];
+  if (loanApp) {
+    loanContextLines.push(`Loan Application Status: ${loanApp.applicationStatus || 'not_started'}`);
+    loanContextLines.push(`Eligibility Band: ${loanApp.eligibilityBand || 'Not computed'}`);
+    if (loanApp.eligibilityNarrative) {
+      loanContextLines.push(`Eligibility Narrative: ${loanApp.eligibilityNarrative}`);
+    }
+    
+    const offers = loanApp.matchedOffers || [];
+    if (offers.length > 0) {
+      loanContextLines.push(`Matched Loan Offers from Exa AI Search:`);
+      offers.forEach((offer, index) => {
+        loanContextLines.push(`  ${index + 1}. Lender: ${offer.lender}`);
+        loanContextLines.push(`     Interest Rate: ${offer.interestRateMin}% - ${offer.interestRateMax}%`);
+        loanContextLines.push(`     Max Loan Amount: INR ${offer.maxLoanAmountINR.toLocaleString('en-IN')}`);
+        loanContextLines.push(`     Collateral Required: ${offer.collateralRequired ? 'Yes' : 'No'}`);
+        if (offer.matchReason) {
+          loanContextLines.push(`     Match Reason: ${offer.matchReason}`);
+        }
+      });
+    } else {
+      loanContextLines.push('No Exa AI matched loan offers found yet.');
+    }
+  } else {
+    loanContextLines.push('No loan application exists yet.');
+  }
+
   const sections = [
     '## Student Profile',
     profileCtx || 'No profile completed yet.',
@@ -320,6 +362,12 @@ function buildMemoryContext(user, conversations) {
       : counsellingProgress.filledCount > 0
         ? `KYC is PARTIAL. Missing fields: ${counsellingProgress.missingLabels.join(', ')}.`
         : 'KYC has NOT started yet. Begin collecting information from scratch.',
+    '',
+    '## Education Journey Progress',
+    journeyProgressLines.join('\n'),
+    '',
+    '## Education Loan Details & Offers',
+    loanContextLines.join('\n'),
     '',
     '## Conversation History',
     memoryCtx || 'This is the first conversation with this student.',
@@ -421,8 +469,11 @@ export async function POST(request) {
       .limit(15)
       .lean();
 
+    // Fetch loan application to check for Exa AI matched offers
+    const loanApp = await LoanApplication.findOne({ userId: session.user.id }).lean();
+
     // Build context
-    const { fullContext, counsellingProgress, allFacts } = buildMemoryContext(user, conversations);
+    const { fullContext, counsellingProgress, allFacts } = buildMemoryContext(user, loanApp, conversations);
     const snapshot = buildCounsellingSnapshot(user.studentProfile || {});
     const studentName = snapshot.studentName || user.name;
     const resumePlan = buildResumePlan(studentName, counsellingProgress, allFacts);

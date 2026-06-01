@@ -129,10 +129,16 @@ Respond ONLY with valid JSON.`;
 
     let result;
     try {
-      result = await genAI.models.generateContent({
+      const generatePromise = genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
       });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API request timed out')), 15000)
+      );
+
+      result = await Promise.race([generatePromise, timeoutPromise]);
     } catch (apiErr) {
       console.error('[extract-kyc] Gemini API error:', apiErr.message || apiErr);
       return NextResponse.json({ error: 'Gemini API failed: ' + (apiErr.message || 'Unknown error') }, { status: 500 });
