@@ -126,17 +126,29 @@ ${transcript}
 
 Respond ONLY with valid JSON.`;
 
-    const result = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-    const text = (result.text ?? '').trim();
+    let result;
+    try {
+      result = await genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+    } catch (apiErr) {
+      console.error('[extract-kyc] Gemini API error:', apiErr.message || apiErr);
+      return NextResponse.json({ error: 'Gemini API failed: ' + (apiErr.message || 'Unknown error') }, { status: 500 });
+    }
+
+    const text = (result?.text ?? '').trim();
+    if (!text) {
+      console.error('[extract-kyc] Gemini returned empty response, result:', result);
+      return NextResponse.json({ error: 'Gemini returned empty response' }, { status: 500 });
+    }
+
     let extracted;
     try {
       extracted = JSON.parse(text.replace(/```json\n?|\n?```/g, ''));
-    } catch {
-      console.error('[extract-kyc] Gemini returned invalid JSON:', text);
-      return NextResponse.json({ error: 'Failed to parse extracted profile' }, { status: 500 });
+    } catch (parseErr) {
+      console.error('[extract-kyc] Gemini returned invalid JSON:', text.substring(0, 500));
+      return NextResponse.json({ error: 'Failed to parse extracted profile: ' + parseErr.message }, { status: 500 });
     }
 
     const profilePatch = normalizeCounsellingProfilePatch(extracted);

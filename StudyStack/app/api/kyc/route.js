@@ -83,14 +83,18 @@ export async function POST(request) {
         : kycData.testStatus;
     }
 
-    // Update user with KYC data
+    // Update user with KYC data — MERGE with existing profile instead of replacing
+    const existingProfile = (existingUser.studentProfile?.toObject ? existingUser.studentProfile.toObject() : existingUser.studentProfile) || {};
+    const mergedProfile = {
+      ...existingProfile,
+      ...normalized,
+      submittedAt: new Date()
+    };
+
     const user = await User.findByIdAndUpdate(
       session.user.id,
       {
-        studentProfile: {
-          ...normalized,
-          submittedAt: new Date()
-        },
+        studentProfile: mergedProfile,
         hasCompletedKYC: true,
         updatedAt: new Date()
       },
