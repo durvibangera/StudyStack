@@ -878,9 +878,19 @@ ${emailLeadsList}
           return response;
         }
         
+        let postUrlMsg = '';
+        if (postData?.post?.id) {
+           const idStr = String(postData.post.id);
+           if (context.nodeType === 'linkedin') {
+              postUrlMsg = `\n\n🔗 View Post: https://www.linkedin.com/feed/update/${idStr}`;
+           } else if (postData?.tweet_url) {
+              postUrlMsg = `\n\n🔗 View Post: ${postData.tweet_url}`;
+           }
+        }
+        
         response = NextResponse.json({ 
           success: true, 
-          output: `✅ Successfully posted to ${context.nodeType === 'linkedin' ? 'LinkedIn' : 'Twitter'}!\n\n${postText}${imageUrls.length > 0 ? `\n\n📸 With ${imageUrls.length} image(s)` : ''}`,
+          output: `✅ Successfully posted to ${context.nodeType === 'linkedin' ? 'LinkedIn' : 'Twitter'}!${postUrlMsg}\n\n${postText}${imageUrls.length > 0 ? `\n\n📸 With ${imageUrls.length} image(s)` : ''}`,
           nodeId 
         });
         return response;

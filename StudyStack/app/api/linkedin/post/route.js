@@ -114,7 +114,8 @@ export async function POST(req) {
           }
 
           const imageBuffer = await imgFetchRes.arrayBuffer();
-          console.log(`[linkedin-post] Fetched image (${imageBuffer.byteLength} bytes)`);
+          const nodeBuffer = Buffer.from(imageBuffer);
+          console.log(`[linkedin-post] Fetched image (${nodeBuffer.byteLength} bytes)`);
 
           // Step 2c: Upload the binary to LinkedIn's upload URL
           const uploadRes = await fetch(uploadUrl, {
@@ -122,8 +123,9 @@ export async function POST(req) {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/octet-stream',
+              'Content-Length': nodeBuffer.byteLength.toString(),
             },
-            body: imageBuffer,
+            body: nodeBuffer,
           });
 
           if (uploadRes.ok || uploadRes.status === 201) {
