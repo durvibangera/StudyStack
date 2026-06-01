@@ -13,6 +13,10 @@ export interface ILoanOffer {
   matchScore: number;           // 0–100
   matchReason: string;          // one sentence, deterministic
   applyUrl: string;
+  prosAndCons?: {
+    pros: string[];
+    cons: string[];
+  };
 }
 
 export interface IEMIScenario {
@@ -167,6 +171,10 @@ const LoanOfferSchema = new Schema({
   matchScore:         { type: Number, default: 0 },
   matchReason:        { type: String, default: '' },
   applyUrl:           { type: String, default: '' },
+  prosAndCons: {
+    pros: { type: [String], default: [] },
+    cons: { type: [String], default: [] },
+  }
 }, { _id: false });
 
 const EMIScenarioSchema = new Schema({

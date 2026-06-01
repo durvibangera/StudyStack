@@ -245,6 +245,7 @@ function evaluateAgainstPolicy(
     interestRateRange: rateRange,
     maxLoanAmountINR: policy.financial?.maxLoanAmountINR || 0,
     collateralRequired: policy.financial?.collateralRequired || false,
+    specialFeatures: policy.specialFeatures || [],
   };
 }
 
