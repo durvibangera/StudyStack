@@ -293,125 +293,194 @@ function mergeAnalysisWithRuleBase(baseAnalysis, aiAnalysis) {
 }
 
 function buildPrompt(profileSummary, missingFields) {
-  return `You are an expert overseas education counsellor at a premium consultancy. Analyze the student profile below and generate a comprehensive, personalized dashboard analysis.
+  const targetCountries = profileSummary.targetCountries.length > 0 
+    ? profileSummary.targetCountries.join(", ")
+    : "Not yet specified";
+  
+  const courseContext = profileSummary.course || profileSummary.field || "their chosen field";
+  const educationContext = profileSummary.education || "their current level";
+  const budgetContext = profileSummary.budget || "their budget range";
+  const timelineContext = profileSummary.timeline || "their preferred intake";
+  
+  return `You are a world-class overseas education counsellor with 15+ years of experience placing Indian students in top universities globally. Analyze this student's profile deeply and generate a highly personalized, actionable dashboard analysis.
 
 STUDENT PROFILE:
 - Name: ${profileSummary.name}
-- Education Level: ${profileSummary.education}
-- Field of Study: ${profileSummary.field}
-- Institution: ${profileSummary.institution}
-- GPA/Score: ${profileSummary.gpa}
-- Target Countries: ${profileSummary.targetCountries.join(", ") || "Not specified"}
-- Course Interest: ${profileSummary.course}
-- English Test Status: ${profileSummary.testStatus}
-- Annual Budget: ${profileSummary.budget}
-- Application Timeline: ${profileSummary.timeline}
-- Current Location: ${profileSummary.location}
+- Current Education: ${educationContext}
+- Field of Study: ${profileSummary.field || "Not yet specified"}
+- Institution: ${profileSummary.institution || "Not yet specified"}
+- Academic Performance (GPA/Score): ${profileSummary.gpa || "Not yet specified"}
+- Target Countries: ${targetCountries}
+- Desired Course: ${courseContext}
+- English Test Status: ${profileSummary.testStatus || "Not yet specified"}
+- Annual Budget: ${budgetContext}
+- Application Timeline: ${timelineContext}
+- Current Location: ${profileSummary.location || "Not yet specified"}
 
-ONLY focus your generated insights on these incomplete/missing areas:
-${missingFields.join(", ")}
+INCOMPLETE PROFILE AREAS TO FOCUS ON:
+${missingFields.length > 0 ? missingFields.map(f => `• ${f}`).join("\n") : "• Profile is nearly complete"}
 
-For fields that are already complete, do not invent replacements and do not contradict existing profile values.
-
-Based on your knowledge, suggest REAL, currently existing universities that match this student's profile, budget, and target countries. Include actual programs, realistic tuition ranges, and scholarship info.
+CRITICAL INSTRUCTIONS:
+1. For COMPLETE fields: Use the provided values as ground truth. Do NOT invent or contradict them.
+2. For INCOMPLETE fields: Provide specific, actionable guidance based on the student's existing profile.
+3. University Suggestions: Recommend 5-8 REAL universities that genuinely match this student's profile, budget, and timeline. Include:
+   - Actual program names (not generic)
+   - Realistic annual tuition in local currency
+   - Specific scholarship opportunities (with names if known)
+   - Actual application deadlines for upcoming intakes
+   - Why each university is a strong fit for THIS student specifically
+4. Wellbeing Assessment: Evaluate stress/confidence/focus based on:
+   - Profile completeness vs. timeline urgency
+   - Test readiness status
+   - Budget clarity
+   - Career clarity
+5. Radar Scores: Rate the student's readiness across 5 dimensions:
+   - Academics: GPA strength + institution reputation + field alignment
+   - Language: Test status + score quality + timeline to retake if needed
+   - Finances: Budget clarity + scholarship eligibility + cost-of-living awareness
+   - Clarity: Career goal definition + country/course alignment + decision confidence
+   - Timeline: Application deadline awareness + intake planning + document readiness
+6. Journey Steps: Personalize each of the 7 steps based on what the student has ACTUALLY done vs. what they need to do next.
 
 RESPOND WITH ONLY A VALID JSON OBJECT (no markdown, no code blocks, no explanation):
 
 {
   "aiInsight": {
-    "headline": "One compelling sentence about the student's profile strength (use their name)",
-    "body": "2-3 sentences of personalized analysis covering strengths, gaps, and next steps",
-    "matchCount": <number of university matches found, realistic 5-25>,
-    "avgFit": "<percentage like 78%>",
-    "urgentCount": <number of urgent action items 1-5>,
-    "topPickLabel": "One sentence about their best opportunity"
+    "headline": "A specific, compelling insight about ${profileSummary.name}'s profile (e.g., 'Priya's strong CS background positions her well for UK MSc programs, but IELTS completion is critical before applying')",
+    "body": "3-4 sentences of deep, personalized analysis. Reference their specific field, target countries, and timeline. Identify their key strengths and the ONE critical blocker holding them back. End with a concrete next step.",
+    "matchCount": <realistic number 5-20 based on their profile specificity>,
+    "avgFit": "<realistic percentage 65-95% based on profile completeness>",
+    "urgentCount": <1-5 based on missing fields and timeline urgency>,
+    "topPickLabel": "A specific sentence about their best opportunity (e.g., 'Imperial College London's MSc in AI is a strong fit given your CS background and 50L budget')"
   },
   "universities": [
     {
-      "name": "Real University Name",
+      "name": "Specific real university (e.g., University of Manchester, not just 'UK University')",
       "country": "Country",
-      "program": "Specific program name",
-      "matchScore": <60-98>,
-      "tuitionRange": "Annual tuition in local currency",
-      "scholarships": "Available scholarship info or 'Check website'",
-      "deadline": "Next application deadline if known",
-      "reason": "Why this is a good match for the student"
+      "program": "Exact program name (e.g., 'MSc Computer Science', not 'CS Program')",
+      "matchScore": <60-98 based on GPA, test score, budget alignment>,
+      "tuitionRange": "Annual tuition in INR or local currency (e.g., '₹25-30L per year' or '£20,000-25,000')",
+      "scholarships": "Specific scholarships (e.g., 'Chevening Scholarship (up to 100% tuition)', 'Merit-based: 20-30% tuition waiver') or 'Limited scholarships - primarily self-funded'",
+      "deadline": "Specific deadline (e.g., 'January 15, 2025 for Fall 2025 intake') or 'Rolling admissions'",
+      "reason": "Why THIS university matches THIS student (e.g., 'Strong for your CS background, within your 50L budget, and offers merit scholarships for Indian students')"
     }
   ],
   "recommendations": [
     {
-      "title": "Specific action item title",
+      "title": "Specific, actionable title (e.g., 'Retake IELTS by November to meet January deadlines', not just 'Improve test score')",
       "category": "academic|test|financial|documents|visa",
       "urgency": "urgent|important|optional",
-      "description": "2 sentences explaining what to do and why"
+      "description": "2-3 sentences with specific context. Reference their profile (e.g., 'Your current IELTS 6.5 is below the 7.0 requirement for most UK MSc programs. Retaking by November gives you 6-8 weeks to improve and still meet January deadlines.')"
     }
   ],
   "wellbeing": {
-    "focus": <30-95>,
-    "confidence": <30-95>,
-    "stress": <20-80>,
-    "assessment": "2 sentences about the student's readiness mindset based on their profile completeness and timeline"
+    "focus": <30-95 based on profile clarity and timeline pressure>,
+    "confidence": <30-95 based on academic strength and test readiness>,
+    "stress": <20-80 based on timeline urgency and missing critical fields>,
+    "assessment": "2-3 sentences analyzing their readiness mindset. Reference specific profile gaps (e.g., 'Your strong academics boost confidence, but the pending IELTS retake and tight January timeline are creating stress. Focus on test prep first—everything else can follow.')"
   },
   "progressTrend": [
-    {"month": "Month abbreviation", "score": <10-100>}
+    {"month": "Jun", "score": <realistic starting score>},
+    {"month": "Jul", "score": <realistic progression>},
+    {"month": "Aug", "score": <realistic progression>},
+    {"month": "Sep", "score": <realistic progression>},
+    {"month": "Oct", "score": <realistic progression>},
+    {"month": "Nov", "score": <realistic progression>},
+    {"month": "Dec", "score": <realistic progression>},
+    {"month": "Jan", "score": <realistic target score>}
   ],
   "sessions": [
     {
-      "topic": "Recommended next counselling session topic",
+      "topic": "Specific session topic (e.g., 'IELTS Strategy & Timeline Planning', not just 'Test Prep')",
       "priority": "high|medium|low",
-      "reason": "Why this session matters now"
+      "reason": "Why this matters NOW for this student (e.g., 'Your January deadline requires IELTS completion by November. A focused strategy session will optimize your prep timeline.')"
     }
   ],
   "budgetBreakdown": [
-    {"name": "Tuition", "pct": <number>},
-    {"name": "Living", "pct": <number>},
-    {"name": "Travel", "pct": <number>},
-    {"name": "Insurance", "pct": <number>},
-    {"name": "Misc", "pct": <number>}
+    {"name": "Tuition", "pct": <realistic % based on their budget and target countries>},
+    {"name": "Living", "pct": <realistic % based on country cost-of-living>},
+    {"name": "Travel", "pct": <realistic % based on origin and destination>},
+    {"name": "Insurance", "pct": <realistic % based on duration>},
+    {"name": "Misc", "pct": <realistic % for contingency>}
   ],
   "radarScores": {
-    "academics": <20-100>,
-    "language": <20-100>,
-    "finances": <20-100>,
-    "clarity": <20-100>,
-    "timeline": <20-100>
+    "academics": <20-100 based on GPA + institution reputation + field alignment>,
+    "language": <20-100 based on test status + score + timeline to improve>,
+    "finances": <20-100 based on budget clarity + scholarship awareness>,
+    "clarity": <20-100 based on country/course/career alignment>,
+    "timeline": <20-100 based on deadline awareness + intake planning + document readiness>
   },
   "journeySteps": [
     {
       "id": 1,
       "status": "completed|current|locked",
-      "description": "Personalized description of what the student has done or needs to do for this step",
-      "actions": ["Specific action 1 for this student", "Specific action 2", "Specific action 3"],
-      "goal": "The specific goal for this step based on the student's profile"
+      "description": "Personalized for this student (e.g., 'Your profile for MSc CS in UK is captured. Now validate that your GPA 8.2 and CS background align with Imperial/Manchester requirements.')",
+      "actions": ["Action 1 specific to them", "Action 2 specific to them", "Action 3 specific to them"],
+      "goal": "Specific goal (e.g., 'Confirm profile aligns with top 5 target universities')"
     },
     {
       "id": 2,
       "status": "completed|current|locked",
-      "description": "...",
-      "actions": ["...", "...", "..."],
-      "goal": "..."
+      "description": "Personalized (e.g., 'IELTS is your critical blocker. Current status: Not taken. Target: 7.0+ by November for January deadlines.')",
+      "actions": ["Specific action 1", "Specific action 2", "Specific action 3"],
+      "goal": "Specific goal (e.g., 'Achieve IELTS 7.0+ by November 15')"
     },
-    { "id": 3, "status": "...", "description": "...", "actions": ["..."], "goal": "..." },
-    { "id": 4, "status": "...", "description": "...", "actions": ["..."], "goal": "..." },
-    { "id": 5, "status": "...", "description": "...", "actions": ["..."], "goal": "..." },
-    { "id": 6, "status": "...", "description": "...", "actions": ["..."], "goal": "..." },
-    { "id": 7, "status": "...", "description": "...", "actions": ["..."], "goal": "..." }
+    { "id": 3, "status": "...", "description": "Personalized for their countries/course", "actions": ["..."], "goal": "..." },
+    { "id": 4, "status": "...", "description": "Personalized for their timeline", "actions": ["..."], "goal": "..." },
+    { "id": 5, "status": "...", "description": "Personalized for their target universities", "actions": ["..."], "goal": "..." },
+    { "id": 6, "status": "...", "description": "Personalized for their budget/timeline", "actions": ["..."], "goal": "..." },
+    { "id": 7, "status": "...", "description": "Personalized for their intake month", "actions": ["..."], "goal": "..." }
   ]
 }
 
-IMPORTANT:
-- Include 4-8 REAL universities from the student's target countries that actually offer their course of interest
-- University names, programs, and tuition must be factual
-- Make the AI insight deeply personalized with specific advice
-- Progress trend should show 6-8 months of realistic progression
-- All numbers should be realistic and internally consistent
-- If budget is mentioned, calibrate university suggestions accordingly
-- If test status is pending, flag it as urgent
-- Include 3-5 recommendations and 2-3 sessions
-- journeySteps must have exactly 7 items (ids 1-7) corresponding to: 1=Profile Completion, 2=IELTS/TOEFL Prep, 3=University Shortlisting, 4=SOP & LOR, 5=Application Submission, 6=Visa Process, 7=Departure Ready
-- For each journey step, set status based on what the student has ACTUALLY completed: "completed" if done, "current" if they should work on it now, "locked" if it's too early. Only one step should be "current".
-- Personalize each step's description and actions based on the student's specific profile (e.g., mention their target countries, course, test status, budget)
-- Each step's goal should be a concise, motivating target specific to this student`;
+CRITICAL REQUIREMENTS FOR HIGH-QUALITY OUTPUT:
+
+UNIVERSITIES:
+- Include 5-8 REAL, currently-accepting universities from their target countries
+- Each must offer their specific course (e.g., 'MSc Computer Science', not generic 'CS')
+- Tuition must be realistic and in local currency (e.g., '₹25-30L/year' or '£20,000-25,000')
+- Scholarships must be specific (e.g., 'Chevening', 'Merit-based 20% waiver') not generic
+- Deadlines must be real (e.g., 'January 15, 2025 for Fall 2025') not vague
+- Match scores should reflect GPA + test score + budget alignment
+- Reason field must explain why THIS university fits THIS student specifically
+
+PERSONALIZATION:
+- Use student's NAME in headline and throughout
+- Reference their SPECIFIC field, countries, GPA, test status, budget, timeline
+- Identify the ONE critical blocker (e.g., 'IELTS is your main blocker')
+- Provide concrete next steps, not generic advice
+- Radar scores must reflect their actual profile (not generic ranges)
+- Wellbeing assessment must reference their specific gaps
+
+JOURNEY STEPS (exactly 7, ids 1-7):
+1. Profile Completion: Validate profile aligns with universities
+2. IELTS/TOEFL Prep: Language test readiness (status based on testStatus field)
+3. University Shortlisting: Build shortlist for their countries/course
+4. SOP & LOR: Prepare application documents
+5. Application Submission: Submit to target universities
+6. Visa Process: Prepare visa documentation
+7. Departure Ready: Final pre-departure tasks
+
+For each step:
+- Set status: "completed" if done, "current" if they should work on it now, "locked" if too early
+- Only ONE step should be "current"
+- Description must reference their profile (countries, course, timeline, budget)
+- Actions must be specific to them, not generic
+- Goal must be concrete and motivating
+
+NUMBERS & CONSISTENCY:
+- Radar scores: 20-100 range, realistic based on profile completeness
+- Wellbeing: focus 30-95, confidence 30-95, stress 20-80
+- Progress trend: 6-8 months showing realistic progression
+- Budget breakdown: percentages must sum to 100 and reflect country costs
+- Match count: 5-20 based on profile specificity
+- Avg fit: 65-95% based on profile completeness
+
+TONE:
+- Expert, encouraging, specific
+- Avoid generic phrases like "improve your profile" or "work on missing areas"
+- Use concrete examples from their profile
+- End recommendations with actionable next steps`;
 }
 
 function extractJSON(text) {

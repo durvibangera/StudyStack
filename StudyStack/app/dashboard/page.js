@@ -97,6 +97,16 @@ export default function Dashboard() {
     refreshDashboardState();
   }, [profileRefreshKey, refreshDashboardState]);
 
+  // Handle openVoiceAgent query parameter from recommendations
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openVoiceAgent') === 'true') {
+      setShowVoiceAgent(true);
+      // Clean up the URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, []);
+
   useEffect(() => {
     const handleProfileUpdate = () => {
       // Debounce: wait 3s after last event before refreshing

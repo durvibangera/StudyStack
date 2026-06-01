@@ -389,20 +389,60 @@ export default function CompleteDashboard() {
   const recommendations = (ai.recommendations || []).slice(0, 3).map((rec, i) => {
     const style = recCategoryStyles[rec.category] || recCategoryStyles.academic;
     const urgency = urgencyTags[rec.urgency] || urgencyTags.important;
+    
+    // Define actions based on recommendation category
+    const getAction = (category, title) => {
+      switch (category) {
+        case 'test':
+          return () => window.open('https://www.ielts.org/', '_blank');
+        case 'academic':
+          // Route to AI agent for university shortlisting
+          return () => {
+            localStorage.setItem('voiceAgentTopic', 'university-shortlisting');
+            window.location.href = '/dashboard?openVoiceAgent=true';
+          };
+        case 'financial':
+          // Route to AI agent for scholarship discussion
+          return () => {
+            localStorage.setItem('voiceAgentTopic', 'scholarships');
+            window.location.href = '/dashboard?openVoiceAgent=true';
+          };
+        case 'documents':
+          // Route to AI agent for SOP/document guidance
+          return () => {
+            localStorage.setItem('voiceAgentTopic', 'sop-lor-documents');
+            window.location.href = '/dashboard?openVoiceAgent=true';
+          };
+        case 'visa':
+          // Route to AI agent for visa guidance
+          return () => {
+            localStorage.setItem('voiceAgentTopic', 'visa-process');
+            window.location.href = '/dashboard?openVoiceAgent=true';
+          };
+        default:
+          return () => {
+            localStorage.setItem('voiceAgentTopic', 'general-guidance');
+            window.location.href = '/dashboard?openVoiceAgent=true';
+          };
+      }
+    };
+    
     return {
       id: i + 1, icon: style.icon,
       iconBg: style.iconBg, iconCls: style.iconCls,
       title: rec.title, tag: urgency.tag, tagCls: urgency.cls,
       desc: rec.description,
       gradient: style.gradient, border: style.border,
+      action: getAction(rec.category, rec.title),
+      cta: "View Details"
     };
   });
   // Fallback if AI hasn't loaded yet
   if (recommendations.length === 0) {
     recommendations.push(
-      { id: 1, icon: GraduationCap, iconBg: "bg-blue-500/15", iconCls: "text-blue-500 dark:text-blue-400", title: `Top University in ${d.primaryCountry}`, tag: `${Math.min(d.readinessScore + 7, 97)}% Match`, tagCls: "bg-blue-500/15 text-blue-600 dark:text-blue-400", desc: `${d.course} — ${d.timeline !== "In Progress" ? d.timeline : "Next"} intake`, gradient: "from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30", border: "border-blue-200/60 dark:border-blue-800/40" },
-      { id: 2, icon: BookOpen, iconBg: "bg-rose-500/15", iconCls: "text-rose-500 dark:text-rose-400", title: "Language Test Preparation", tag: "Urgent", tagCls: "bg-rose-500/15 text-rose-600 dark:text-rose-400", desc: `Band 7.0 target — required for ${d.primaryCountry} universities`, gradient: "from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30", border: "border-rose-200/60 dark:border-rose-800/40" },
-      { id: 3, icon: Award, iconBg: "bg-amber-500/15", iconCls: "text-amber-500 dark:text-amber-400", title: "Scholarship Opportunities", tag: "Explore", tagCls: "bg-amber-500/15 text-amber-600 dark:text-amber-400", desc: `Financial aid options for ${d.primaryCountry} study`, gradient: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200/60 dark:border-amber-800/40" },
+      { id: 1, icon: GraduationCap, iconBg: "bg-blue-500/15", iconCls: "text-blue-500 dark:text-blue-400", title: `Top University in ${d.primaryCountry}`, tag: `${Math.min(d.readinessScore + 7, 97)}% Match`, tagCls: "bg-blue-500/15 text-blue-600 dark:text-blue-400", desc: `${d.course} — ${d.timeline !== "In Progress" ? d.timeline : "Next"} intake`, gradient: "from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30", border: "border-blue-200/60 dark:border-blue-800/40", action: () => { localStorage.setItem('voiceAgentTopic', 'university-shortlisting'); window.location.href = '/dashboard?openVoiceAgent=true'; }, cta: "View Details" },
+      { id: 2, icon: BookOpen, iconBg: "bg-rose-500/15", iconCls: "text-rose-500 dark:text-rose-400", title: "Language Test Preparation", tag: "Urgent", tagCls: "bg-rose-500/15 text-rose-600 dark:text-rose-400", desc: `Band 7.0 target — required for ${d.primaryCountry} universities`, gradient: "from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30", border: "border-rose-200/60 dark:border-rose-800/40", action: () => window.open('https://www.ielts.org/', '_blank'), cta: "View Details" },
+      { id: 3, icon: Award, iconBg: "bg-amber-500/15", iconCls: "text-amber-500 dark:text-amber-400", title: "Scholarship Opportunities", tag: "Explore", tagCls: "bg-amber-500/15 text-amber-600 dark:text-amber-400", desc: `Financial aid options for ${d.primaryCountry} study`, gradient: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30", border: "border-amber-200/60 dark:border-amber-800/40", action: () => { localStorage.setItem('voiceAgentTopic', 'scholarships'); window.location.href = '/dashboard?openVoiceAgent=true'; }, cta: "View Details" },
     );
   }
 
@@ -722,7 +762,13 @@ export default function CompleteDashboard() {
                 </div>
                 <h3 className="text-base font-black text-foreground">{rec.title}</h3>
                 <p className="mt-1.5 text-sm text-muted-foreground">{rec.desc}</p>
-                <button className="mt-5 flex items-center gap-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground">
+                <button 
+                  onClick={() => {
+                    if (rec.action) rec.action();
+                    else console.log(`Action for: ${rec.title}`);
+                  }}
+                  className="mt-5 flex items-center gap-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
+                >
                   {rec.cta || "View Details"}
                   <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                 </button>
