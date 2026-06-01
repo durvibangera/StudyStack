@@ -205,11 +205,12 @@ export default function Dashboard() {
     );
   }
 
-  if ((kycStatus === 'completed' || kycStatus === 'in-progress') && studentProfile) {
-    const hasEditableProfile = (counsellingProgress?.filledCount || 0) > 0;
+  const isCompleteOrInProgress = (kycStatus === 'completed' || kycStatus === 'in-progress') && studentProfile;
+  const hasEditableProfile = isCompleteOrInProgress && (counsellingProgress?.filledCount || 0) > 0;
 
-    return (
-      <div className="min-h-screen w-full">
+  return (
+    <div className="min-h-screen w-full">
+      {isCompleteOrInProgress ? (
         <div className="container mx-auto max-w-[1380px] space-y-8 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -248,249 +249,220 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      ) : (
+        <div className="container mx-auto max-w-7xl space-y-8 p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="ivy-font mb-2 text-4xl font-bold text-foreground">
+                Student Dashboard
+              </h1>
+              <p className="ivy-font text-muted-foreground">
+                AI-powered student lead qualification and counselling analytics
+              </p>
+            </div>
+          </div>
 
-        {preparingResumeCall && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/88 backdrop-blur-sm">
-            <div className="rounded-[28px] border border-border/50 bg-card/85 px-8 py-7 text-center shadow-2xl">
-              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-              <h2 className="ivy-font mt-4 text-2xl font-bold text-foreground">Preparing resume flow</h2>
-              <p className="ivy-font mt-2 text-sm text-muted-foreground">Loading your conversation history...</p>
+          {kycStatus === 'new' && (
+            <Card className="relative overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm">
+              <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
+
+              <CardContent className="relative flex flex-col items-center justify-center gap-10 py-24 sm:py-32">
+                <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-linear-to-br from-emerald-400 to-teal-500 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20">
+                  <Rocket className="h-14 w-14 text-white" />
+                </div>
+
+                <div className="space-y-4 text-center">
+                  <h2 className="ivy-font text-4xl font-extrabold text-foreground sm:text-5xl lg:text-6xl">
+                    Ready to begin?
+                  </h2>
+                  <p className="ivy-font mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl">
+                    Set up your student profile so we can personalise your counselling journey and match you with the best universities.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  {[
+                    { icon: "🎓", label: "University Matching" },
+                    { icon: "🗺️", label: "Personalised Roadmap" },
+                    { icon: "💬", label: "AI Counselling" },
+                    { icon: "📊", label: "Readiness Score" },
+                  ].map(({ icon, label }) => (
+                    <span
+                      key={label}
+                      className="ivy-font flex items-center gap-2 rounded-full border border-border/50 bg-muted/40 px-5 py-2 text-sm font-medium text-foreground backdrop-blur-sm"
+                    >
+                      <span>{icon}</span>{label}
+                    </span>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={() => setShowJourneyModal(true)}
+                  className="h-14 bg-linear-to-r from-emerald-500 to-teal-500 px-10 text-lg font-bold text-white shadow-xl shadow-emerald-500/30 transition-all duration-300 hover:scale-105 hover:from-emerald-600 hover:to-teal-600"
+                >
+                  <Sparkles className="mr-2.5 h-6 w-6" />
+                  Start Your Journey
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {showJourneyModal && !showFillMethod && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/50 bg-card shadow-2xl">
+            <button
+              type="button"
+              onClick={closeJourneyFlow}
+              className="absolute right-4 top-4 z-10 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <AvatarPicker
+              avatars={AVATARS}
+              selectedId={selectedAvatar?.id}
+              onSelect={handleAvatarSelect}
+            />
+
+            <div className="px-8 pb-8">
               <button
                 type="button"
-                onClick={() => setPreparingResumeCall(false)}
-                className="ivy-font mt-4 text-sm font-medium text-muted-foreground underline hover:text-foreground transition-colors"
+                onClick={handleConfirmAvatar}
+                className="ivy-font w-full rounded-2xl bg-linear-to-r from-emerald-500 to-teal-500 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:scale-[1.02] hover:from-emerald-600 hover:to-teal-600"
               >
-                Cancel
+                Continue with {selectedAvatar?.name}
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {showVoiceAgent && (
-          <div className="fixed inset-0 z-50 flex bg-background">
-            <div className="relative flex-1">
+      {showJourneyModal && showFillMethod && selectedAvatar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-border/50 bg-card p-8 shadow-2xl sm:p-10">
+            <button
+              type="button"
+              onClick={closeJourneyFlow}
+              className="absolute right-4 top-4 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="mb-8 flex flex-col items-center gap-4">
+              <div className={`flex h-48 w-48 items-center justify-center rounded-3xl bg-linear-to-br ${selectedAvatar.accent} p-5 shadow-lg shadow-black/20`}>
+                <Image
+                  src={selectedAvatar.src}
+                  alt={selectedAvatar.name}
+                  width={220}
+                  height={220}
+                  className="h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.35)]"
+                />
+              </div>
+              <p className="ivy-font text-2xl font-semibold text-foreground">{selectedAvatar.name}</p>
+            </div>
+            <div className="mb-6 text-center">
+              <h2 className="ivy-font text-2xl font-bold text-foreground">
+                How would you like to fill your profile?
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => {
-                  setShowVoiceAgent(false);
-                  setPreparedVoiceSession(null);
+                  try { localStorage.setItem('selectedAvatar', JSON.stringify(selectedAvatar)); } catch {}
+                  closeJourneyFlow();
+                  router.push("/onboarding");
                 }}
-                className="absolute right-4 top-4 z-10 rounded-full border border-border/50 bg-card p-2 text-muted-foreground shadow-md transition-colors hover:text-foreground"
-                aria-label="Close voice agent"
+                className="group flex flex-col items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-6 transition-all duration-200 hover:scale-105 hover:border-emerald-500/60 hover:bg-emerald-500/10"
               >
-                <X className="h-5 w-5" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
+                  <PenLine className="h-6 w-6 text-emerald-500" />
+                </div>
+                <div className="text-center">
+                  <p className="ivy-font font-semibold text-foreground">Fill Manually</p>
+                  <p className="ivy-font mt-1 text-xs text-muted-foreground">
+                    Fill in your details using the form
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-emerald-500" />
               </button>
-              <AnamVoiceAgent
-                mode="onboarding"
-                onComplete={handleVoiceComplete}
-                sessionMemory={preparedVoiceSession}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen w-full">
-      <div className="container mx-auto max-w-7xl space-y-8 p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="ivy-font mb-2 text-4xl font-bold text-foreground">
-              Student Dashboard
-            </h1>
-            <p className="ivy-font text-muted-foreground">
-              AI-powered student lead qualification and counselling analytics
-            </p>
+              <button
+                type="button"
+                onClick={() => {
+                  try { localStorage.setItem('selectedAvatar', JSON.stringify(selectedAvatar)); } catch {}
+                  closeJourneyFlow();
+                  setShowVoiceAgent(true);
+                }}
+                className="group flex flex-col items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-6 transition-all duration-200 hover:scale-105 hover:border-emerald-500/60 hover:bg-emerald-500/10"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
+                  <Mic2 className="h-6 w-6 text-emerald-500" />
+                </div>
+                <div className="text-center">
+                  <p className="ivy-font font-semibold text-foreground">Fill with Voice Agent</p>
+                  <p className="ivy-font mt-1 text-xs text-muted-foreground">
+                    Let our AI guide you by voice
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-emerald-500" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFillMethod(false)}
+              className="mt-6 w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Back to avatar selection
+            </button>
           </div>
         </div>
+      )}
 
-        {/* ── Onboarding prompt (shown when NO data yet) ── */}
-        {kycStatus === 'new' && (
-          <Card className="relative overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm">
-            <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
-
-            <CardContent className="relative flex flex-col items-center justify-center gap-10 py-24 sm:py-32">
-              <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-linear-to-br from-emerald-400 to-teal-500 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20">
-                <Rocket className="h-14 w-14 text-white" />
-              </div>
-
-              <div className="space-y-4 text-center">
-                <h2 className="ivy-font text-4xl font-extrabold text-foreground sm:text-5xl lg:text-6xl">
-                  Ready to begin?
-                </h2>
-                <p className="ivy-font mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl">
-                  Set up your student profile so we can personalise your counselling journey and match you with the best universities.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-3">
-                {[
-                  { icon: "🎓", label: "University Matching" },
-                  { icon: "🗺️", label: "Personalised Roadmap" },
-                  { icon: "💬", label: "AI Counselling" },
-                  { icon: "📊", label: "Readiness Score" },
-                ].map(({ icon, label }) => (
-                  <span
-                    key={label}
-                    className="ivy-font flex items-center gap-2 rounded-full border border-border/50 bg-muted/40 px-5 py-2 text-sm font-medium text-foreground backdrop-blur-sm"
-                  >
-                    <span>{icon}</span>{label}
-                  </span>
-                ))}
-              </div>
-
-              <Button
-                onClick={() => setShowJourneyModal(true)}
-                className="h-14 bg-linear-to-r from-emerald-500 to-teal-500 px-10 text-lg font-bold text-white shadow-xl shadow-emerald-500/30 transition-all duration-300 hover:scale-105 hover:from-emerald-600 hover:to-teal-600"
-              >
-                <Sparkles className="mr-2.5 h-6 w-6" />
-                Start Your Journey
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        {/* ── Avatar Picker Modal ── */}
-        {showJourneyModal && !showFillMethod && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/50 bg-card shadow-2xl">
-              <button
-                type="button"
-                onClick={closeJourneyFlow}
-                className="absolute right-4 top-4 z-10 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              <AvatarPicker
-                avatars={AVATARS}
-                selectedId={selectedAvatar?.id}
-                onSelect={handleAvatarSelect}
-              />
-
-              <div className="px-8 pb-8">
-                <button
-                  type="button"
-                  onClick={handleConfirmAvatar}
-                  className="ivy-font w-full rounded-2xl bg-linear-to-r from-emerald-500 to-teal-500 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:scale-[1.02] hover:from-emerald-600 hover:to-teal-600"
-                >
-                  Continue with {selectedAvatar?.name}
-                </button>
-              </div>
-            </div>
+      {preparingResumeCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/88 backdrop-blur-sm">
+          <div className="rounded-[28px] border border-border/50 bg-card/85 px-8 py-7 text-center shadow-2xl">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+            <h2 className="ivy-font mt-4 text-2xl font-bold text-foreground">Preparing resume flow</h2>
+            <p className="ivy-font mt-2 text-sm text-muted-foreground">Loading your conversation history...</p>
+            <button
+              type="button"
+              onClick={() => setPreparingResumeCall(false)}
+              className="ivy-font mt-4 text-sm font-medium text-muted-foreground underline hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Fill Method Modal ── */}
-        {showJourneyModal && showFillMethod && selectedAvatar && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-2xl rounded-3xl border border-border/50 bg-card p-8 shadow-2xl sm:p-10">
-              <button
-                type="button"
-                onClick={closeJourneyFlow}
-                className="absolute right-4 top-4 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <div className="mb-8 flex flex-col items-center gap-4">
-                <div className={`flex h-48 w-48 items-center justify-center rounded-3xl bg-linear-to-br ${selectedAvatar.accent} p-5 shadow-lg shadow-black/20`}>
-                  <Image
-                    src={selectedAvatar.src}
-                    alt={selectedAvatar.name}
-                    width={220}
-                    height={220}
-                    className="h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.35)]"
-                  />
-                </div>
-                <p className="ivy-font text-2xl font-semibold text-foreground">{selectedAvatar.name}</p>
-              </div>
-              <div className="mb-6 text-center">
-                <h2 className="ivy-font text-2xl font-bold text-foreground">
-                  How would you like to fill your profile?
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    try { localStorage.setItem('selectedAvatar', JSON.stringify(selectedAvatar)); } catch {}
-                    closeJourneyFlow();
-                    router.push("/onboarding");
-                  }}
-                  className="group flex flex-col items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-6 transition-all duration-200 hover:scale-105 hover:border-emerald-500/60 hover:bg-emerald-500/10"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
-                    <PenLine className="h-6 w-6 text-emerald-500" />
-                  </div>
-                  <div className="text-center">
-                    <p className="ivy-font font-semibold text-foreground">Fill Manually</p>
-                    <p className="ivy-font mt-1 text-xs text-muted-foreground">
-                      Fill in your details using the form
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-emerald-500" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    try { localStorage.setItem('selectedAvatar', JSON.stringify(selectedAvatar)); } catch {}
-                    closeJourneyFlow();
-                    setShowVoiceAgent(true);
-                  }}
-                  className="group flex flex-col items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-6 transition-all duration-200 hover:scale-105 hover:border-emerald-500/60 hover:bg-emerald-500/10"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
-                    <Mic2 className="h-6 w-6 text-emerald-500" />
-                  </div>
-                  <div className="text-center">
-                    <p className="ivy-font font-semibold text-foreground">Fill with Voice Agent</p>
-                    <p className="ivy-font mt-1 text-xs text-muted-foreground">
-                      Let our AI guide you by voice
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-emerald-500" />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowFillMethod(false)}
-                className="mt-6 w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Back to avatar selection
-              </button>
-            </div>
+      {showVoiceAgent && (
+        <div className="fixed inset-0 z-50 flex bg-background">
+          <div className="hidden w-72 border-r border-border/40 lg:flex">
+            <LiveKYCChecklist active className="w-full rounded-none border-0" />
           </div>
-        )}
-
-        {/* ── Voice Agent with side-by-side Checklist ── */}
-        {showVoiceAgent && (
-          <div className="fixed inset-0 z-50 flex bg-background">
-            {/* Live checklist sidebar — left */}
-            <div className="hidden w-72 border-r border-border/40 lg:flex">
-              <LiveKYCChecklist active className="w-full rounded-none border-0" />
-            </div>
-            {/* Voice agent — takes most of the space */}
-            <div className="relative flex-1">
-              <button
-                type="button"
-                onClick={() => setShowVoiceAgent(false)}
-                className="absolute right-4 top-4 z-10 rounded-full border border-border/50 bg-card p-2 text-muted-foreground shadow-md transition-colors hover:text-foreground"
-                aria-label="Close voice agent"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <AnamVoiceAgent
-                mode="onboarding"
-                onComplete={handleVoiceComplete}
-              />
-            </div>
+          <div className="relative flex-1">
+            <button
+              type="button"
+              onClick={() => {
+                setShowVoiceAgent(false);
+                setPreparedVoiceSession(null);
+              }}
+              className="absolute right-4 top-4 z-10 rounded-full border border-border/50 bg-card p-2 text-muted-foreground shadow-md transition-colors hover:text-foreground"
+              aria-label="Close voice agent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <AnamVoiceAgent
+              mode="onboarding"
+              onComplete={handleVoiceComplete}
+              sessionMemory={preparedVoiceSession}
+            />
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </div>
   );
 }

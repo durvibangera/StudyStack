@@ -556,10 +556,33 @@ Respond ONLY with valid JSON. No markdown code fences.`;
       existingApp.markModified('profileSnapshot');
       await existingApp.save();
     } else {
-      await LoanApplication.create({
-        ...updatePayload,
-        documentChecklist: docChecklist,
-      });
+      try {
+        await LoanApplication.create({
+          ...updatePayload,
+          documentChecklist: docChecklist,
+        });
+      } catch (err: any) {
+        if (err.code === 11000) {
+          const concurrentApp = await LoanApplication.findOne({ userId: (session as any).user.id });
+          if (concurrentApp) {
+            Object.assign(concurrentApp, updatePayload);
+            if (!concurrentApp.documentChecklist || concurrentApp.documentChecklist.length === 0) {
+              concurrentApp.documentChecklist = docChecklist;
+            }
+            concurrentApp.markModified('kpis');
+            concurrentApp.markModified('analysis');
+            concurrentApp.markModified('scholarships');
+            concurrentApp.markModified('forumInsights');
+            concurrentApp.markModified('governmentSchemes');
+            concurrentApp.markModified('searchParams');
+            concurrentApp.markModified('sources');
+            concurrentApp.markModified('profileSnapshot');
+            await concurrentApp.save();
+          }
+        } else {
+          throw err;
+        }
+      }
     }
 
     return NextResponse.json({

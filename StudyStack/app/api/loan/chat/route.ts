@@ -180,10 +180,25 @@ Respond as Aria:`;
         }
       );
     } else {
-      await LoanApplication.create({
-        userId: session.user.id,
-        chatHistory: [userMessage, assistantMessage],
-      });
+      try {
+        await LoanApplication.create({
+          userId: session.user.id,
+          chatHistory: [userMessage, assistantMessage],
+        });
+      } catch (err: any) {
+        if (err.code === 11000) {
+          await LoanApplication.findOneAndUpdate(
+            { userId: session.user.id },
+            {
+              $push: {
+                chatHistory: { $each: [userMessage, assistantMessage] },
+              },
+            }
+          );
+        } else {
+          throw err;
+        }
+      }
     }
 
     return NextResponse.json({
