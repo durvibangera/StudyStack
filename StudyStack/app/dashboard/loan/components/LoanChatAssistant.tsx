@@ -85,7 +85,7 @@ const QUICK_ACTIONS = [
 
 /* ── Main Component ───────────────────────────────────────────────────────── */
 export default function LoanChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
