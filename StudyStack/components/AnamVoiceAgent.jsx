@@ -287,6 +287,10 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
         clearTimeout(timeoutId);
 
         if (!tokenRes.ok) {
+          if (tokenRes.status === 401) {
+            window.location.href = '/login';
+            return;
+          }
           const err = await tokenRes.json().catch(() => ({}));
           throw new Error(err.error || `Session creation failed (${tokenRes.status})`);
         }

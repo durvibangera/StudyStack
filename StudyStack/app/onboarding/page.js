@@ -458,7 +458,7 @@ function FinalDashboard({ data, avatar, onRestart }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
@@ -506,10 +506,14 @@ export default function OnboardingPage() {
     return () => obs.disconnect();
   }, []);
 
-  // Redirect counsellors
+  // Redirect unauthenticated users or counsellors
   useEffect(() => {
-    if (session?.user?.role === 'counsellor') router.push('/dashboard');
-  }, [session, router]);
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (session?.user?.role === 'counsellor') {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
 
   const set = (name, value) => setData((d) => ({ ...d, [name]: value }));
 
@@ -605,6 +609,21 @@ export default function OnboardingPage() {
         options={['WhatsApp', 'Call', 'Email']} />
     </div>,
   ];
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading onboarding...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden">

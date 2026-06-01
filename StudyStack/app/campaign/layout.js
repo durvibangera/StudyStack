@@ -13,7 +13,9 @@ export default function CampaignLayout({ children }) {
 
   // RBAC: Only counsellors can access Campaign AI
   useEffect(() => {
-    if (authStatus === 'authenticated' && session?.user?.role !== 'counsellor') {
+    if (authStatus === 'unauthenticated') {
+      router.push('/login');
+    } else if (authStatus === 'authenticated' && session?.user?.role !== 'counsellor') {
       router.replace('/dashboard');
     }
   }, [session, authStatus, router]);
@@ -43,7 +45,7 @@ export default function CampaignLayout({ children }) {
     );
   }
 
-  if (authStatus === 'authenticated' && session?.user?.role !== 'counsellor') return null;
+  if (authStatus === 'unauthenticated' || (authStatus === 'authenticated' && session?.user?.role !== 'counsellor')) return null;
 
   const hideMenu = pathname.endsWith('/campaign/canvas');
 

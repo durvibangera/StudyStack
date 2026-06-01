@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import StaggeredMenu from "@/components/StaggeredMenu";
 import WhatsAppPoller from "@/components/WhatsAppPoller";
 import dynamic from "next/dynamic";
@@ -9,7 +10,8 @@ import dynamic from "next/dynamic";
 const FloatingCounsellor = dynamic(() => import('@/components/FloatingCounsellor'), { ssr: false });
 
 export default function DashboardLayout({ children }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [menuBtnColor, setMenuBtnColor] = useState('#000000');
 
   useEffect(() => {
@@ -30,6 +32,27 @@ export default function DashboardLayout({ children }) {
     
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+          <p className="ivy-font text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const role = session?.user?.role;
 

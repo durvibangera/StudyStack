@@ -38,14 +38,7 @@ export default function Footer() {
                   Features
                 </a>
               </li>
-              <li>
-                <a
-                  href="#pricing"
-                  className="text-sm text-slate-600 transition-colors hover:text-emerald-500 dark:text-slate-400 dark:hover:text-emerald-400"
-                >
-                  Pricing
-                </a>
-              </li>
+
               <li>
                 <a
                   href="#dashboard"

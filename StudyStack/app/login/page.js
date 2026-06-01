@@ -182,7 +182,6 @@ export default function LoginPage() {
               { label: "Home", link: "/", ariaLabel: "Go to Home" },
               { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
               { label: "Features", link: "/#features", ariaLabel: "View Features" },
-              { label: "Pricing", link: "/#pricing", ariaLabel: "View Pricing" },
               { label: "Contact", link: "/#contact", ariaLabel: "Contact us" },
             ]}
           />
