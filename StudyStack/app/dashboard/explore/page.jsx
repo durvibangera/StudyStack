@@ -123,11 +123,7 @@ export default function ExplorePage() {
     }
   }, [country, program, budget]);
 
-  // Auto-explore on mount
-  useEffect(() => {
-    explore();
-    checkAdmission();
-  }, []);
+  // No auto-explore on mount to save API credits
 
   const universities = data?.universities || [];
   const countryInsights = data?.countryInsights || {};
@@ -233,6 +229,19 @@ export default function ExplorePage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && !data && (
+          <div className="flex flex-col items-center justify-center gap-4 py-24 text-center animate-in fade-in zoom-in duration-500">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 mb-2">
+              <Search className="h-10 w-10 text-emerald-500" />
+            </div>
+            <h2 className="ivy-font text-2xl font-black text-foreground">Ready to Explore?</h2>
+            <p className="ivy-font max-w-md text-sm text-muted-foreground leading-relaxed">
+              Select your desired country, program, and budget above, then click <strong>Explore</strong> to let our AI find the best universities and predict your admission chances.
+            </p>
+          </div>
         )}
 
         {/* Results */}

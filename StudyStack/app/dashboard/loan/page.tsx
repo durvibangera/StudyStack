@@ -313,6 +313,72 @@ export default function LoanPage() {
                   </div>
                 )}
 
+                {/* Policy Matches Section */}
+                {policyMatches.length > 0 && (
+                  <div className="rounded-2xl border border-violet-500/30 bg-card/80 p-8 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="ivy-font text-sm font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-2">
+                          <span>🏦</span> Policy-Based Matches
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">Based on uploaded lender policies — transparent rule-based evaluation</p>
+                      </div>
+                      <button
+                        onClick={loadPolicyMatches}
+                        disabled={policyLoading}
+                        className="text-xs font-bold text-violet-500 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1.5 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+                      >
+                        {policyLoading ? 'Refreshing...' : '↻ Refresh'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {policyMatches.map((match: any) => (
+                        <div key={match.policyId} className={`rounded-xl border p-5 transition-all ${
+                          match.eligible ? 'border-emerald-500/30 bg-emerald-500/5' 
+                          : match.partiallyEligible ? 'border-amber-500/30 bg-amber-500/5'
+                          : 'border-rose-500/30 bg-rose-500/5'
+                        }`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="text-base font-black text-foreground">{match.lenderName}</h4>
+                              <p className="text-xs text-muted-foreground">{match.productName}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-lg font-black ${
+                                match.matchScore >= 70 ? 'text-emerald-500' : match.matchScore >= 40 ? 'text-amber-500' : 'text-rose-500'
+                              }`}>{match.matchScore}%</span>
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Match</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                              match.eligible ? 'bg-emerald-500/15 text-emerald-500'
+                              : match.partiallyEligible ? 'bg-amber-500/15 text-amber-500'
+                              : 'bg-rose-500/15 text-rose-500'
+                            }`}>
+                              {match.eligible ? '✓ Eligible' : match.partiallyEligible ? '⚠ Partially Eligible' : '✗ Not Eligible'}
+                            </span>
+                            <span className="text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full">
+                              {match.interestRateRange}
+                            </span>
+                            {match.collateralRequired && (
+                              <span className="text-[10px] font-medium text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">Collateral</span>
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            {match.reasons.slice(0, 4).map((r: any, i: number) => (
+                              <div key={i} className="flex items-start gap-1.5 text-xs">
+                                <span className={`mt-0.5 ${r.met ? 'text-emerald-500' : 'text-rose-500'}`}>{r.met ? '✓' : '✗'}</span>
+                                <span className="text-muted-foreground">{r.detail}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Offers Grid */}
                 <div>
                   <h3 className="ivy-font mb-5 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
@@ -378,71 +444,6 @@ export default function LoanPage() {
               </div>
             )}
 
-            {/* Policy Matches Section (within dashboard) */}
-            {activeTab === 'dashboard' && policyMatches.length > 0 && (
-              <div className="rounded-2xl border border-violet-500/30 bg-card/80 p-8 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="ivy-font text-sm font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-2">
-                      <span>🏦</span> Policy-Based Matches
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">Based on uploaded lender policies — transparent rule-based evaluation</p>
-                  </div>
-                  <button
-                    onClick={loadPolicyMatches}
-                    disabled={policyLoading}
-                    className="text-xs font-bold text-violet-500 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1.5 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
-                  >
-                    {policyLoading ? 'Refreshing...' : '↻ Refresh'}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {policyMatches.map((match: any) => (
-                    <div key={match.policyId} className={`rounded-xl border p-5 transition-all ${
-                      match.eligible ? 'border-emerald-500/30 bg-emerald-500/5' 
-                      : match.partiallyEligible ? 'border-amber-500/30 bg-amber-500/5'
-                      : 'border-rose-500/30 bg-rose-500/5'
-                    }`}>
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="text-base font-black text-foreground">{match.lenderName}</h4>
-                          <p className="text-xs text-muted-foreground">{match.productName}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`text-lg font-black ${
-                            match.matchScore >= 70 ? 'text-emerald-500' : match.matchScore >= 40 ? 'text-amber-500' : 'text-rose-500'
-                          }`}>{match.matchScore}%</span>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Match</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                          match.eligible ? 'bg-emerald-500/15 text-emerald-500'
-                          : match.partiallyEligible ? 'bg-amber-500/15 text-amber-500'
-                          : 'bg-rose-500/15 text-rose-500'
-                        }`}>
-                          {match.eligible ? '✓ Eligible' : match.partiallyEligible ? '⚠ Partially Eligible' : '✗ Not Eligible'}
-                        </span>
-                        <span className="text-[10px] font-medium text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full">
-                          {match.interestRateRange}
-                        </span>
-                        {match.collateralRequired && (
-                          <span className="text-[10px] font-medium text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">Collateral</span>
-                        )}
-                      </div>
-                      <div className="space-y-1.5">
-                        {match.reasons.slice(0, 4).map((r: any, i: number) => (
-                          <div key={i} className="flex items-start gap-1.5 text-xs">
-                            <span className={`mt-0.5 ${r.met ? 'text-emerald-500' : 'text-rose-500'}`}>{r.met ? '✓' : '✗'}</span>
-                            <span className="text-muted-foreground">{r.detail}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
@@ -485,7 +486,37 @@ export default function LoanPage() {
 
             {/* Comparison Tab */}
             {activeTab === 'comparison' && (
-              <OfferComparison offers={offers} />
+              <OfferComparison offers={[
+                ...offers,
+                ...policyMatches.map(pm => {
+                  let minRate = 0;
+                  let maxRate = 0;
+                  if (pm.interestRateRange && pm.interestRateRange !== 'N/A') {
+                    const parts = pm.interestRateRange.replace(/%/g, '').split('-');
+                    if (parts.length >= 2) {
+                      minRate = parseFloat(parts[0].trim()) || 0;
+                      maxRate = parseFloat(parts[1].trim()) || 0;
+                    } else if (parts.length === 1) {
+                      minRate = parseFloat(parts[0].trim()) || 0;
+                      maxRate = minRate;
+                    }
+                  }
+                  return {
+                    lender: `${pm.lenderName} (${pm.productName})`,
+                    interestRateMin: minRate,
+                    interestRateMax: maxRate,
+                    maxLoanAmountINR: pm.maxLoanAmountINR || 0,
+                    collateralRequired: pm.collateralRequired || false,
+                    moratoriumMonths: 6, // Standard assumption if not passed
+                    prosAndCons: {
+                      pros: pm.specialFeatures?.length > 0 
+                        ? pm.specialFeatures 
+                        : pm.reasons.filter((r: any) => r.met).map((r: any) => r.detail),
+                      cons: pm.reasons.filter((r: any) => !r.met).map((r: any) => r.detail)
+                    }
+                  };
+                })
+              ]} />
             )}
 
             {/* AI Assistant Tab */}
