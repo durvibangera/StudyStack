@@ -104,6 +104,52 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
     }, 8_000);
   }, [emitProfileUpdate]);
 
+  // ── Helper: Trigger Gamification Milestones ──
+  const triggerGamificationEvents = async (transcript) => {
+    if (!transcript?.trim()) return;
+    try {
+      const msRes = await fetch('/api/gamification/milestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: sessionIdRef.current, transcript })
+      });
+      if (msRes.ok) {
+        const msData = await msRes.json();
+        if (msData.triggeredMilestone && msData.awardResult && !msData.awardResult.alreadyEarned) {
+          window.dispatchEvent(new CustomEvent('gamification:event', {
+            detail: {
+              type: 'MILESTONE',
+              data: {
+                title: msData.triggeredMilestone,
+                description: 'Milestone detected from your AI conversation!',
+                rewardXP: msData.awardResult.xpAwarded || 0,
+                ...msData.awardResult
+              }
+            }
+          }));
+          return; // Skip session complete award if milestone hit to not spam toasts
+        }
+      }
+      
+      // If no milestone, just award session complete
+      const awRes = await fetch('/api/gamification/award', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'session_complete' })
+      });
+      if (awRes.ok) {
+        const awData = await awRes.json();
+        if (!awData.alreadyEarned && awData.xpAwarded > 0) {
+          window.dispatchEvent(new CustomEvent('gamification:event', {
+            detail: { type: 'AWARD', data: { ...awData, reason: 'AI Session Completed!' } }
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('[Gamification] Error triggering gamification:', e);
+    }
+  };
+
   // ── Extract & save KYC from transcript ──
   const extractAndSaveKyc = useCallback(async () => {
     if (hasExtractedRef.current) return;
@@ -152,6 +198,9 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
       } else {
         toast.success('Profile extracted and saved!');
       }
+
+      await triggerGamificationEvents(transcript);
+
       window.setTimeout(() => {
         if (!cancelledRef.current) onCompleteRef.current?.();
       }, 1500);
@@ -183,6 +232,12 @@ export default function AnamVoiceAgent({ onComplete, mode = 'onboarding', sessio
           mode: convMode,
         }),
       });
+      
+      const transcript = currentMessages
+        .map((m) => `${m.role === 'user' ? 'Student' : 'Agent'}: ${m.content}`)
+        .join('\n');
+      await triggerGamificationEvents(transcript);
+
     } catch (err) {
       console.error('[AnamVoiceAgent] Failed to save conversation:', err);
     }

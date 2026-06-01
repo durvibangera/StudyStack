@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
@@ -21,6 +21,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +53,15 @@ export default function LoginPage() {
     
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    // Check for referral code
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('referral_code', refCode);
+      setIsLogin(false); // Automatically switch to signup mode
+    }
+  }, [searchParams]);
 
   const validateForm = () => {
     setFieldErrors({});

@@ -104,12 +104,12 @@ function deriveStatuses(readinessScore, data, dynamicSteps) {
   }
 
   // first step always complete (they filled the form), derive the rest from data
-  const testDone       = data?.testStatus === "Taken";
+  const testDone       = data?.testStatus === "Taken" || data?.gamification?.milestoneFlags?.ieltsScoreAdded;
   const testPreparing  = data?.testStatus === "Preparing";
-  const hasShortlist   = (data?.targetCountry?.length || 0) >= 1;
-  const hasSOP         = data?.sopStatus === "Done";
-  const submitted      = data?.applicationStatus === "Submitted";
-  const visaDone       = data?.visaStatus === "Done";
+  const hasShortlist   = (data?.targetCountry?.length || 0) >= 1 || data?.gamification?.milestoneFlags?.shortlistDone;
+  const hasSOP         = data?.sopStatus === "Done" || data?.gamification?.milestoneFlags?.sopDone;
+  const submitted      = data?.applicationStatus === "Submitted" || data?.gamification?.milestoneFlags?.applicationSubmitted;
+  const visaDone       = data?.visaStatus === "Done" || data?.gamification?.milestoneFlags?.visaDone;
 
   if (readinessScore >= 90)
     return ["completed","completed","completed","completed","completed","completed","current"];
@@ -539,10 +539,10 @@ function JourneyNode({ step, status, isLast, isRight, avatar, avatarAccent, inde
 }
 
 // ─── Main exported component ───────────────────────────────────────────────────
-export default function JourneyPath({ avatar, avatarAccent, readinessScore, data, dynamicSteps }) {
+export default function JourneyPath({ avatar, avatarAccent, readinessScore, data, dynamicSteps, gamification }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const statuses = deriveStatuses(readinessScore ?? 65, data, dynamicSteps);
+  const statuses = deriveStatuses(readinessScore ?? 65, { ...data, gamification }, dynamicSteps);
 
   // Merge AI-generated content into steps
   const steps = JOURNEY_STEPS.map((base) => {

@@ -114,6 +114,27 @@ const UserSchema = new mongoose.Schema({
     default: null,
   },
   
+  // ── Gamification ──────────────────────────────────────────────────────────
+  gamification: {
+    xp:           { type: Number, default: 0 },
+    level:        { type: Number, default: 1 },
+    streakDays:   { type: Number, default: 0 },
+    lastActiveDate: { type: Date, default: null },
+    badges:       { type: [{ id: String, earnedAt: Date }], default: [] },
+    referralCode: { type: String, default: null, sparse: true },
+    referredBy:   { type: String, default: null },
+    referralCount:{ type: Number, default: 0 },
+    milestoneFlags: {
+      profileComplete:      { type: Boolean, default: false },
+      firstSession:         { type: Boolean, default: false },
+      ieltsScoreAdded:      { type: Boolean, default: false },
+      shortlistDone:        { type: Boolean, default: false },
+      sopDone:              { type: Boolean, default: false },
+      applicationSubmitted: { type: Boolean, default: false },
+      visaDone:             { type: Boolean, default: false },
+    }
+  },
+
   // Social Media Tokens
   socialTokens: {
     linkedin: {

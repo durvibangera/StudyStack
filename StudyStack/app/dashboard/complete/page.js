@@ -22,6 +22,12 @@ import {
 import JourneyPath from "@/components/JourneyPath";
 import { getCounsellingFieldValue } from "@/lib/counselling-profile";
 import WhatsAppScheduleCard from "@/components/WhatsAppScheduleCard";
+import GamificationHUD from "@/components/gamification/GamificationHUD";
+import BadgeShowcase from "@/components/gamification/BadgeShowcase";
+import ReferralCard from "@/components/gamification/ReferralCard";
+import SmartNudge from "@/components/gamification/SmartNudge";
+import XPToast from "@/components/gamification/XPToast";
+import MilestonePopup from "@/components/gamification/MilestonePopup";
 
 const PIE_COLORS = ["#10b981", "#0ea5e9", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899"];
 
@@ -223,6 +229,40 @@ export default function CompleteDashboard() {
     missingFields: [],
   });
 
+  // Gamification state
+  const [gameStatus, setGameStatus] = useState(null);
+  const [xpToastParams, setXpToastParams] = useState({ show: false });
+  const [milestoneParams, setMilestoneParams] = useState({ show: false });
+
+  // Event listener for global gamification events
+  useEffect(() => {
+    const handleGameEvent = (e) => {
+      const { type, data } = e.detail;
+      if (type === 'AWARD') {
+        setXpToastParams({
+          show: true,
+          xpAmount: data.xpAwarded,
+          reason: data.reason || 'Bonus XP Earned!',
+          levelUp: data.levelUp,
+          newLevel: data.level,
+          badge: data.newBadges?.length ? data.newBadges[0] : null
+        });
+        // Update local status
+        setGameStatus(prev => prev ? { ...prev, ...data } : data);
+      } else if (type === 'MILESTONE') {
+        setMilestoneParams({
+          show: true,
+          title: data.title,
+          description: data.description,
+          rewardXP: data.rewardXP
+        });
+        // Milestone triggers an award event too
+      }
+    };
+    window.addEventListener('gamification:event', handleGameEvent);
+    return () => window.removeEventListener('gamification:event', handleGameEvent);
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     try {
@@ -279,6 +319,48 @@ export default function CompleteDashboard() {
         setProfile(p);
         // Trigger Gemini analysis
         fetchAnalysis(p);
+
+        // Fetch Gamification status
+        fetch("/api/gamification/status")
+          .then(r => r.json())
+          .then(data => {
+            if (!data.error) {
+              setGameStatus(data);
+              
+              // 1. Process pending referral
+              const pendingRef = localStorage.getItem('referral_code');
+              if (pendingRef) {
+                fetch("/api/gamification/referral", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code: pendingRef })
+                }).then(r => r.json()).then(refData => {
+                  if (refData.success) {
+                    window.dispatchEvent(new CustomEvent('gamification:event', {
+                      detail: { type: 'AWARD', data: { xpAwarded: refData.bonusXP, reason: 'Welcome Bonus! 🎉', levelUp: false, level: 1 } }
+                    }));
+                  }
+                  localStorage.removeItem('referral_code');
+                });
+              }
+
+              // 2. Check daily streak automatically
+              fetch("/api/gamification/award", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "streak_checkin" })
+              })
+              .then(ar => ar.json())
+              .then(awData => {
+                if (!awData.error && awData.xpAwarded > 0) {
+                  window.dispatchEvent(new CustomEvent('gamification:event', {
+                    detail: { type: 'AWARD', data: { ...awData, reason: 'Daily Check-in Streak! 🔥' } }
+                  }));
+                }
+              });
+            }
+          });
+
       } catch {
         router.push("/dashboard");
       } finally {
@@ -481,7 +563,21 @@ export default function CompleteDashboard() {
 
   return (
     <div className="min-h-screen w-full">
+      {/* Gamification Overlays */}
+      <XPToast 
+        {...xpToastParams} 
+        onComplete={() => setXpToastParams({ show: false })} 
+      />
+      <MilestonePopup 
+        {...milestoneParams} 
+        onComplete={() => setMilestoneParams({ show: false })} 
+      />
+      <SmartNudge status={gameStatus} profile={profile} />
+
       <div className="container mx-auto max-w-[1380px] space-y-6 p-4 sm:p-6 lg:p-8">
+
+        {/* Gamification HUD */}
+        {gameStatus && <GamificationHUD status={gameStatus} />}
 
         {/* ── Hero Banner ── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -569,6 +665,13 @@ export default function CompleteDashboard() {
             );
           })}
         </motion.div>
+
+        {/* Gamification Badge Showcase */}
+        {gameStatus && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }}>
+            <BadgeShowcase earnedBadges={gameStatus.badges} />
+          </motion.div>
+        )}
 
         {/* ── Charts Row ── */}
         {mounted && (
@@ -777,6 +880,17 @@ export default function CompleteDashboard() {
           </div>
         </motion.div>
 
+        {/* Referral Section */}
+        {gameStatus && (
+          <motion.div 
+            id="referral-section"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5, delay: 0.36 }}
+          >
+            <ReferralCard referralCode={gameStatus.referralCode} referralCount={gameStatus.referralCount} />
+          </motion.div>
+        )}
+
         {/* ── Education Financing Awareness Banner ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -936,6 +1050,7 @@ export default function CompleteDashboard() {
               readinessScore={d.readinessScore}
               data={journeyData}
               dynamicSteps={ai.journeySteps}
+              gamification={gameStatus}
             />
           )}
         </motion.div>
