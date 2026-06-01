@@ -91,7 +91,7 @@ export default function SmartNudge({ status, profile }) {
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          className="fixed bottom-6 right-6 z-50 max-w-sm w-[calc(100%-3rem)] bg-card border border-border/50 shadow-2xl rounded-2xl overflow-hidden"
+          className="fixed bottom-28 right-6 z-50 max-w-sm w-[calc(100%-3rem)] bg-card border border-border/50 shadow-2xl rounded-2xl overflow-hidden"
         >
           {/* Subtle gradient strip at top */}
           <div className="h-1 w-full bg-linear-to-r from-emerald-500 to-teal-500" />

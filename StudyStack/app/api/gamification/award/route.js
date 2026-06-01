@@ -25,7 +25,7 @@ function computeLevel(xp) {
 // ── XP + badge award map ──────────────────────────────────────────────────────
 const AWARD_MAP = {
   profile_complete:       { xp: 100, badge: 'profile_pioneer',  flag: 'profileComplete' },
-  session_complete:       { xp: 50,  badge: null,               flag: 'firstSession' },
+  session_complete:       { xp: 50,  badge: 'first_chat',       flag: 'firstSession' },
   streak_checkin:         { xp: 25,  badge: null,               flag: null },
   ielts_score_added:      { xp: 150, badge: 'test_warrior',     flag: 'ieltsScoreAdded' },
   shortlist_done:         { xp: 100, badge: 'shortlist_pro',    flag: 'shortlistDone' },

@@ -58,6 +58,23 @@ export async function GET(req) {
       modified = true;
     }
 
+    if (user.hasCompletedKYC && (!g.milestoneFlags || !g.milestoneFlags.profileComplete)) {
+      if (!g.milestoneFlags) g.milestoneFlags = {};
+      g.milestoneFlags.profileComplete = true;
+      g.xp = (g.xp || 0) + 100;
+      if (!g.badges.some(b => b.id === 'profile_pioneer')) {
+        g.badges.push({ id: 'profile_pioneer', earnedAt: new Date() });
+      }
+      user.gamification = g;
+      modified = true;
+    }
+
+    if (g.milestoneFlags?.firstSession && !g.badges.some(b => b.id === 'first_chat')) {
+      g.badges.push({ id: 'first_chat', earnedAt: new Date() });
+      user.gamification = g;
+      modified = true;
+    }
+
     if (modified) {
       user.markModified('gamification');
       await user.save();
