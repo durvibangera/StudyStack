@@ -206,8 +206,9 @@ export async function PUT(request) {
     }
 
     // Save progress — merge with existing data
+    const existingProfile = (existingUser.studentProfile?.toObject ? existingUser.studentProfile.toObject() : existingUser.studentProfile) || {};
     const merged = {
-      ...(existingUser.studentProfile?.toObject?.() || {}),
+      ...existingProfile,
       ...kycData
     };
 

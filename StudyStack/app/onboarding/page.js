@@ -456,6 +456,62 @@ function FinalDashboard({ data, avatar, onRestart }) {
   );
 }
 
+// ── Helper: Map Backend Counselling Profile to Onboarding Data ────────────────
+const mapProfileToData = (profile) => {
+  if (!profile) return {};
+  
+  let testStatus = profile.testStatus || '';
+  let testScore = profile.testScore || '';
+  if (profile.englishTestStatus && !testStatus) {
+    const et = profile.englishTestStatus;
+    if (et.includes('(')) {
+      const match = et.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        testStatus = match[1];
+        testScore = match[2];
+      } else {
+        testStatus = et;
+      }
+    } else {
+      testStatus = et;
+    }
+  }
+
+  return {
+    fullName: profile.fullName || profile.studentName || '',
+    phone: profile.phone || profile.phoneNumber || '',
+    email: profile.email || profile.contactEmail || '',
+    city: profile.city || profile.currentLocation || '',
+    
+    educationLevel: profile.educationLevel || '',
+    fieldOfStudy: profile.fieldOfStudy || '',
+    institution: profile.institution || '',
+    gpa: profile.gpa || profile.gpaPercentage || '',
+    backlogs: profile.backlogs || '',
+    
+    targetCountry: Array.isArray(profile.targetCountry) 
+      ? profile.targetCountry 
+      : Array.isArray(profile.targetCountries) 
+      ? profile.targetCountries 
+      : [],
+    courseInterest: profile.courseInterest || '',
+    intakeMonth: profile.intakeMonth || '',
+    intakeYear: profile.intakeYear || '',
+    careerGoal: profile.careerGoal || '',
+    
+    testStatus: testStatus,
+    testScore: testScore,
+    applicationTimeline: profile.applicationTimeline || '',
+    
+    budget: profile.budget || profile.budgetRange || '',
+    scholarshipInterest: profile.scholarshipInterest || '',
+    
+    studyEnv: profile.studyEnv || '',
+    decisionStyle: profile.decisionStyle || '',
+    contactMethod: profile.contactMethod || '',
+  };
+};
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const { data: session, status } = useSession();
@@ -515,6 +571,30 @@ export default function OnboardingPage() {
     }
   }, [status, session, router]);
 
+  // Fetch existing profile data on load to pre-populate form fields
+  useEffect(() => {
+    if (status === 'authenticated') {
+      async function loadProfile() {
+        try {
+          const res = await fetch('/api/kyc', { cache: 'no-store' });
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData.studentProfile) {
+              setData(mapProfileToData(resData.studentProfile));
+              // If the profile was already complete, let's show the final dashboard!
+              if (resData.hasCompletedKYC) {
+                setDone(true);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load profile:', err);
+        }
+      }
+      loadProfile();
+    }
+  }, [status]);
+
   const set = (name, value) => setData((d) => ({ ...d, [name]: value }));
 
   const goNext = () => {
@@ -535,6 +615,14 @@ export default function OnboardingPage() {
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to save profile');
+      }
+      // Re-fetch to get any normalized back-end transformations
+      const getRes = await fetch('/api/kyc', { cache: 'no-store' });
+      if (getRes.ok) {
+        const resData = await getRes.json();
+        if (resData.studentProfile) {
+          setData(mapProfileToData(resData.studentProfile));
+        }
       }
       setDone(true);
     } catch (err) {
@@ -663,7 +751,19 @@ export default function OnboardingPage() {
               </button>
               <AnamVoiceAgent
                 mode="onboarding"
-                onComplete={() => {
+                onComplete={async () => {
+                  // Fetch the latest profile data from `/api/kyc` before setting done
+                  try {
+                    const res = await fetch('/api/kyc', { cache: 'no-store' });
+                    if (res.ok) {
+                      const resData = await res.json();
+                      if (resData.studentProfile) {
+                        setData(mapProfileToData(resData.studentProfile));
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Failed to sync KYC after call:', err);
+                  }
                   setVoiceMode(false);
                   setDone(true);
                 }}
