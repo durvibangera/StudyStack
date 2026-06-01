@@ -13,8 +13,12 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
+  const error = searchParams.get('error');
+  const errorDescription = searchParams.get('error_description');
+  
   if (!code) {
-    return NextResponse.redirect(new URL('/profile?error=linkedin_auth_failed', req.url));
+    console.error('LinkedIn auth failed. Missing code.', { error, errorDescription, url: req.url });
+    return NextResponse.redirect(new URL(`/profile?error=linkedin_auth_failed&details=${encodeURIComponent(error || 'unknown')}`, req.url));
   }
   // Exchange code for access token
   const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {

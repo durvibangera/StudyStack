@@ -7,12 +7,12 @@ export async function POST(req) {
     console.log('LinkedIn token exchange attempt');
     console.log('Code received:', code ? 'Yes' : 'No');
     console.log('Client ID:', process.env.LINKEDIN_CLIENT_ID);
-    console.log('Redirect URI:', 'http://localhost:3000/get-tokens/linkedin/callback');
+    console.log('Redirect URI:', process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000/api/linkedin/auth/callback');
 
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: 'http://localhost:3000/get-tokens/linkedin/callback',
+      redirect_uri: process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000/api/linkedin/auth/callback',
       client_id: process.env.LINKEDIN_CLIENT_ID,
       client_secret: process.env.LINKEDIN_CLIENT_SECRET,
     });
