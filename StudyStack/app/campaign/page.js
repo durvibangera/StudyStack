@@ -93,6 +93,24 @@ function CampaignPageContent() {
     setIsEnhancing(true);
 
     try {
+      // Step 0: Validate original brief before enhancing
+      const validateResponse = await fetch('/api/campaign/validate-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief: text }),
+      });
+
+      if (!validateResponse.ok) {
+        throw new Error('Failed to validate campaign brief');
+      }
+
+      const validateData = await validateResponse.json();
+      if (!validateData.isValid) {
+        toast.error(validateData.reason || 'Please enter a valid real workflow concept or idea');
+        setIsEnhancing(false);
+        return;
+      }
+
       const response = await fetch('/api/campaign/enhance-brief', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,6 +147,24 @@ function CampaignPageContent() {
     setGeneratingStrategy(true);
 
     try {
+      // Step 0: Validate the campaign brief
+      const validateResponse = await fetch('/api/campaign/validate-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief }),
+      });
+
+      if (!validateResponse.ok) {
+        throw new Error('Failed to validate campaign brief');
+      }
+
+      const validateData = await validateResponse.json();
+      if (!validateData.isValid) {
+        toast.error(validateData.reason || 'Please enter a valid real workflow concept or idea');
+        setGeneratingStrategy(false);
+        return;
+      }
+
       // Step 1: Generate Strategy
       const strategyResponse = await fetch('/api/campaign/generate-strategy', {
         method: 'POST',
