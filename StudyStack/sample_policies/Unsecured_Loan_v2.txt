@@ -1,0 +1,29 @@
+Lender: Poonawala Fincorp
+Product: Unsecured Education Loan
+
+Eligibility:
+- Target Countries: USA, UK, Canada, Australia, Germany, Ireland
+- Minimum GPA: 7.5 out of 10 or equivalent (Strict academic track record required)
+- Supported Degrees: Masters (MS, MBA), STEM programs, PhD
+- Co-applicant: Mandatory. Relies heavily on co-applicant's financial profile. Minimum co-applicant income is INR 9,00,000 per annum.
+
+Financial Terms:
+- Interest Rate: 10.50% to 12.5% (UPDATED: Lower interest rate category)
+- Max Loan Amount: Up to INR 6,000,000 (UPDATED: Increased limit based on course and university ranking)
+- Processing Fee: 1.0% to 1.5% of loan amount (UPDATED: Reduced fee)
+- Collateral Required: None. No physical or financial assets pledged. Evaluation is based on future earning potential.
+
+Repayment:
+- Moratorium Period: Course duration + 6 months
+- Max Tenure: 144 months (12 years) (UPDATED: Extended tenure)
+- Prepayment Penalty: Nil
+
+Required Documents:
+- Applicant KYC (Aadhar, PAN)
+- University Admission Letter (Mandatory)
+- Co-applicant Income Proof (ITR for last 3 years, Salary Slips)
+
+Special Features:
+- Fast processing time (often 2-4 days)
+- Zero asset valuation or legal verification required
+- Best for students heading to premier global institutions

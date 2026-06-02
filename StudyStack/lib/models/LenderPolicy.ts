@@ -64,6 +64,24 @@ export interface IExtractedPolicies {
   additionalNotes: string;
 }
 
+export interface IRagEvaluation {
+  // Faithfulness: did the AI extract only what the doc actually says?
+  faithfulnessScore: number;          // 0-100: % of extracted fields verified in source text
+  faithfulnessFlags: {                // per-field verification result
+    field: string;
+    extractedValue: string;
+    verified: boolean;
+    evidence: string;                 // quote from source doc, or 'NOT FOUND'
+  }[];
+  // Completeness: are all critical fields present?
+  completenessScore: number;          // 0-100
+  missingCriticalFields: string[];
+  // Overall
+  overallScore: number;               // weighted: 60% faithfulness + 40% completeness
+  verdict: 'excellent' | 'good' | 'partial' | 'poor';
+  evaluatedAt: string;
+}
+
 export interface ILenderPolicy extends Document {
   lenderName: string;
   productName: string;
@@ -75,6 +93,9 @@ export interface ILenderPolicy extends Document {
   status: 'processing' | 'review' | 'active' | 'inactive';
   aiConfidenceScore: number;
   aiExtractionNotes: string;
+  ragEvaluation?: IRagEvaluation;
+  version: number;
+  previousVersionId?: mongoose.Types.ObjectId;
   activatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -192,6 +213,18 @@ const LenderPolicySchema = new Schema<ILenderPolicy>({
   aiExtractionNotes: {
     type: String,
     default: '',
+  },
+  ragEvaluation: {
+    type: Schema.Types.Mixed,
+    default: null,
+  },
+  version: {
+    type: Number,
+    default: 1,
+  },
+  previousVersionId: {
+    type: Schema.Types.ObjectId,
+    default: null,
   },
   activatedAt: {
     type: Date,

@@ -1,0 +1,30 @@
+Lender: Poonawala Fincorp
+Product: Partially Secured Education Loan
+
+Eligibility:
+- Target Countries: USA, UK, Canada, Australia, New Zealand, Europe
+- Minimum GPA: 6.5 out of 10 or equivalent
+- Supported Degrees: Undergraduate, Masters, PG Diplomas
+- Co-applicant: Mandatory.
+
+Financial Terms:
+- Interest Rate: 9.75% to 11.25% (UPDATED: Reduced rate for partial collateral)
+- Max Loan Amount: Up to INR 8,000,000 (UPDATED: Higher ceiling)
+- Processing Fee: 0.75% to 1.25% of loan amount
+- Collateral Required: Yes, but only partial. Value of collateral (property/FD) must cover at least 40% of the loan amount. (UPDATED: Lower collateral coverage required)
+
+Repayment:
+- Moratorium Period: Course duration + 6 months
+- Max Tenure: 144 months (12 years)
+- Prepayment Penalty: Nil
+
+Required Documents:
+- Applicant KYC (Aadhar, PAN)
+- University Admission Letter
+- Co-applicant Income Proof (ITR for last 2 years, Salary Slips)
+- Property Documents or FD Receipts for the partial collateral portion
+
+Special Features:
+- Ideal for students needing higher amounts but lacking full collateral
+- Better interest rates than purely unsecured loans
+- Flexible collateral types accepted (residential, commercial, liquid assets)
