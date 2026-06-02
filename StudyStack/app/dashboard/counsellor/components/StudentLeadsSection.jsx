@@ -137,6 +137,24 @@ function StudentCard({ student, onClick }) {
                 {student.profileProgress.filled}/{student.profileProgress.total} KYC
               </span>
             )}
+
+            {/* Loan Readiness Badge */}
+            {student.loanReadiness && (
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                student.loanReadiness.score >= 80 ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300/30" :
+                student.loanReadiness.score >= 60 ? "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-300/30" :
+                "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/30"
+              }`}>
+                💰 Loan: {student.loanReadiness.score}% ({student.loanReadiness.loanTypePreference})
+              </span>
+            )}
+
+            {/* Best Loan Match Badge */}
+            {student.bestLoanMatch && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-300/30 flex items-center gap-1">
+                ⭐ {student.bestLoanMatch.lenderName}
+              </span>
+            )}
           </div>
 
           {/* Bottom row */}
@@ -543,6 +561,97 @@ function StudentDetailModal({ student, onClose, onDeleteSuccess }) {
               </div>
             </div>
 
+            {/* Loan Eligibility & Best Match */}
+            {detail.loanReadiness && (
+              <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-500/10 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .8-3 1.8 0 .9 1.3 1.5 3 1.5s3 .6 3 1.5c0 .9-1.3 1.5-3 1.5-1.657 0-3-.8-3-1.8m3-7.2v14a3 3 0 00-3-3H9m3 3h3" />
+                    </svg>
+                    Loan Eligibility Readiness: {detail.loanReadiness.score}/100
+                  </h3>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
+                    detail.loanReadiness.score >= 80 ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30" :
+                    detail.loanReadiness.score >= 60 ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30" :
+                    "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
+                  }`}>
+                    {detail.loanReadiness.band} Match
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${detail.loanReadiness.score}%` }}
+                  />
+                </div>
+
+                {/* Supporting Decision Points */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Eligibility Rationale</span>
+                  <ul className="space-y-1">
+                    {detail.loanReadiness.reasons?.map((reason, i) => (
+                      <li key={i} className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal flex items-start gap-1.5">
+                        <span className="text-emerald-500 font-bold shrink-0">•</span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Suggested Loan Scheme Match */}
+                {detail.bestLoanMatch ? (
+                  <div className="mt-3 p-3.5 rounded-xl border border-purple-200 dark:border-purple-500/10 bg-purple-50/30 dark:bg-purple-950/10 space-y-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Suggested Lender Policy Match</span>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                          {detail.bestLoanMatch.lenderName} — {detail.bestLoanMatch.productName}
+                        </h4>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300/30 shrink-0">
+                        {detail.bestLoanMatch.matchScore}% Match
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 py-1 border-t border-b border-purple-100/50 dark:border-purple-500/5">
+                      <div>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-medium">Interest Rates</span>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{detail.bestLoanMatch.interestRateMin}% - {detail.bestLoanMatch.interestRateMax}%</p>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-medium">Max Limit</span>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">₹{(detail.bestLoanMatch.maxLoanAmountINR/100000).toFixed(0)} Lakhs</p>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-medium">Collateral</span>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{detail.bestLoanMatch.collateralRequired ? "Required" : "No Collateral"}</p>
+                      </div>
+                    </div>
+
+                    {/* Match Comments */}
+                    {detail.bestLoanMatch.reasons?.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold text-purple-500/80 uppercase tracking-wide">Matching Comments</span>
+                        <ul className="space-y-0.5">
+                          {detail.bestLoanMatch.reasons.map((r, i) => (
+                            <li key={i} className="text-[10px] text-slate-600 dark:text-slate-400 leading-normal flex items-start gap-1">
+                              <span className="text-purple-500 font-bold shrink-0">-</span>
+                              {r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg border border-dashed border-slate-200 dark:border-white/10 text-center text-[11px] text-slate-500">
+                    No active loan matching criteria found in the upload database for this student profile.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Profile Fields */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
@@ -868,7 +977,7 @@ export default function StudentLeadsSection() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {filter === "all" ? "No students with completed KYC yet." : `No ${filter} leads found.`}
+            {filter === "all" ? "No student profiles found." : `No ${filter} leads found.`}
           </p>
         </div>
       ) : (

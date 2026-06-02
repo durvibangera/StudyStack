@@ -29,6 +29,22 @@ const gmailTransporter = nodemailer.createTransport({
 const TEST_EMAIL = 'jenithspam@gmail.com';
 const ENABLE_TEST_COPY = process.env.ENABLE_TEST_COPY === 'true';
 
+function cleanAndValidateName(name: any): string {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  if (trimmed.length < 2 || trimmed.length > 25) return '';
+  if (trimmed.startsWith('u/') || trimmed.startsWith('r/')) return '';
+  if (trimmed.includes('http') || trimmed.includes('.') || trimmed.includes('@') || trimmed.includes('/') || trimmed.includes('\\')) return '';
+  if (/[0-9:|£₹$€%&_+=;<>?@*^]/.test(trimmed)) return '';
+  
+  const lower = trimmed.toLowerCase();
+  const badWords = ['visa', 'fund', 'student', 'guide', 'post', 'blog', 'university', 'consultant', 'advis', 'counsel', 'official', 'forum', 'admission', 'site', 'stack', 'study', 'ielts', 'pte'];
+  for (const word of badWords) {
+    if (lower.includes(word)) return '';
+  }
+  return trimmed;
+}
+
 type EmailTemplate = {
   subject: string;
   html: string;
@@ -201,9 +217,10 @@ export async function POST(request: Request) {
           let personalizedHtml = template.html;
           let personalizedText = template.text || '';
 
-          if (recipientName) {
-            personalizedHtml = personalizedHtml.replace(/{{name}}/g, recipientName);
-            personalizedText = personalizedText.replace(/{{name}}/g, recipientName);
+          const cleanName = cleanAndValidateName(recipientName);
+          if (cleanName) {
+            personalizedHtml = personalizedHtml.replace(/{{name}}/g, cleanName);
+            personalizedText = personalizedText.replace(/{{name}}/g, cleanName);
           } else {
             personalizedHtml = personalizedHtml.replace(/{{name}}/g, 'there');
             personalizedText = personalizedText.replace(/{{name}}/g, 'there');

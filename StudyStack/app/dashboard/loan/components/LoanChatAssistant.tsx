@@ -3,12 +3,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MessageCircle, Send, X, Sparkles, Loader2, Bot, User,
-  ChevronDown, Calculator, FileText, Search, RefreshCcw
+  ChevronDown, Calculator, FileText, Search, RefreshCcw, Trash2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 /* ── Chat Message Bubble ──────────────────────────────────────────────────── */
-function ChatMessage({ message, isLast }: { message: any; isLast: boolean }) {
+function ChatMessage({ message, isLast, onNavigate }: { 
+  message: any; 
+  isLast: boolean; 
+  onNavigate?: (tab: 'dashboard' | 'analytics' | 'comparison' | 'assistant' | 'documents' | 'settings') => void;
+}) {
   const isUser = message.role === 'user';
 
   return (
@@ -40,6 +44,14 @@ function ChatMessage({ message, isLast }: { message: any; isLast: boolean }) {
             {message.actions.map((action: any, i: number) => (
               <button
                 key={i}
+                onClick={() => {
+                  if (onNavigate) {
+                    if (action.type === 'calculateEMI') onNavigate('dashboard');
+                    else if (action.type === 'showDocChecklist') onNavigate('documents');
+                    else if (action.type === 'viewOffers') onNavigate('dashboard');
+                    else if (action.type === 'checkEligibility') onNavigate('settings');
+                  }
+                }}
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-500 hover:bg-emerald-500/20 transition-colors"
               >
                 {action.type === 'calculateEMI' && <Calculator className="h-3 w-3" />}
@@ -84,12 +96,32 @@ const QUICK_ACTIONS = [
 ];
 
 /* ── Main Component ───────────────────────────────────────────────────────── */
-export default function LoanChatAssistant() {
+export default function LoanChatAssistant({ onNavigate }: {
+  onNavigate?: (tab: 'dashboard' | 'analytics' | 'comparison' | 'assistant' | 'documents' | 'settings') => void;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  const clearChat = async () => {
+    if (!confirm('Are you sure you want to clear your chat history?')) return;
+    setIsClearing(true);
+    try {
+      const res = await fetch('/api/loan/chat', { method: 'DELETE' });
+      if (res.ok) {
+        setMessages([]);
+      } else {
+        console.error('Failed to clear chat');
+      }
+    } catch (e) {
+      console.error('Failed to clear chat:', e);
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -195,6 +227,17 @@ export default function LoanChatAssistant() {
             <p className="text-[10px] text-muted-foreground font-medium">Policy-aware AI financing copilot</p>
           </div>
         </div>
+        {messages.length > 0 && (
+          <button
+            onClick={clearChat}
+            disabled={isClearing}
+            className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-500/25 transition-colors disabled:opacity-50"
+            title="Clear chat history"
+          >
+            {isClearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Clear Chat
+          </button>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -224,7 +267,7 @@ export default function LoanChatAssistant() {
           </div>
         ) : (
           messages.map((msg, i) => (
-            <ChatMessage key={i} message={msg} isLast={i === messages.length - 1} />
+            <ChatMessage key={i} message={msg} isLast={i === messages.length - 1} onNavigate={onNavigate} />
           ))
         )}
 

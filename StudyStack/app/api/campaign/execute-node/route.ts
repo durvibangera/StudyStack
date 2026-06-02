@@ -28,6 +28,22 @@ type EmailTemplate = { subject: string; html: string; text?: string };
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXCLUDED_BROADCAST_TYPES = new Set(['community', 'competitor']);
 
+function cleanAndValidateName(name: any): string {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  if (trimmed.length < 2 || trimmed.length > 25) return '';
+  if (trimmed.startsWith('u/') || trimmed.startsWith('r/')) return '';
+  if (trimmed.includes('http') || trimmed.includes('.') || trimmed.includes('@') || trimmed.includes('/') || trimmed.includes('\\')) return '';
+  if (/[0-9:|£₹$€%&_+=;<>?@*^]/.test(trimmed)) return '';
+  
+  const lower = trimmed.toLowerCase();
+  const badWords = ['visa', 'fund', 'student', 'guide', 'post', 'blog', 'university', 'consultant', 'advis', 'counsel', 'official', 'forum', 'admission', 'site', 'stack', 'study', 'ielts', 'pte'];
+  for (const word of badWords) {
+    if (lower.includes(word)) return '';
+  }
+  return trimmed;
+}
+
 function normalizeEmail(email: string): string {
   return String(email || '').trim().toLowerCase();
 }
@@ -446,8 +462,11 @@ Return ONLY a JSON array of 6 query strings.`;
               name = title.substring(0, 40);
             }
           } else {
-            name = title.substring(0, 50);
+            name = ''; // General webpages don't contain individual human names
           }
+
+          // Clean and validate name for email personalization
+          name = cleanAndValidateName(name);
 
           // Extract CONTACT INFO
           const emails = extractedData.emails || [];

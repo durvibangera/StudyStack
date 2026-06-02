@@ -5,7 +5,10 @@ import CounsellorSession from '@/lib/models/CounsellorSession';
 import Booking from '@/lib/models/Booking';
 import ConversationMemory from '@/lib/models/ConversationMemory';
 import { buildCounsellingProgress, buildCounsellingSnapshot } from '@/lib/counselling-profile';
-import { computeLeadScore, classifyLead, recalculateAndCacheUserScore } from '@/lib/lead-scoring';
+import { computeLeadScore, classifyLead, recalculateAndCacheUserScore, computeLoanReadiness, findBestLoanMatch } from '@/lib/lead-scoring';
+import LenderPolicy from '@/lib/models/LenderPolicy';
+
+
 
 /**
  * GET /api/students/scored
@@ -18,11 +21,11 @@ export async function GET() {
 
     const students = await User.find({
       role: 'student',
-      hasCompletedKYC: true,
     })
       .select('name email image studentProfile hasCompletedKYC createdAt leadScore leadClassification sessionCount bookingCount voiceSessionCount')
       .lean();
 
+    const activePolicies = await LenderPolicy.find({ status: 'active' }).lean();
     const scored = [];
 
     for (const student of students) {
@@ -76,6 +79,8 @@ export async function GET() {
         voiceSessionCount: voiceSessionCount || 0,
         score: score || 0,
         classification: classification || 'cold',
+        loanReadiness: computeLoanReadiness(student.studentProfile),
+        bestLoanMatch: await findBestLoanMatch(student.studentProfile, activePolicies),
         joinedAt: student.createdAt,
       });
     }

@@ -8,7 +8,10 @@ import Booking from '@/lib/models/Booking';
 import ConversationMemory from '@/lib/models/ConversationMemory';
 import Lead from '@/lib/models/Lead';
 import { buildCounsellingProgress, buildCounsellingSnapshot, COUNSELLING_FIELDS } from '@/lib/counselling-profile';
-import { recalculateAndCacheUserScore } from '@/lib/lead-scoring';
+import { recalculateAndCacheUserScore, computeLoanReadiness, findBestLoanMatch } from '@/lib/lead-scoring';
+import LenderPolicy from '@/lib/models/LenderPolicy';
+
+
 
 /**
  * GET /api/students/[id]
@@ -83,8 +86,11 @@ export async function GET(request, { params }) {
       filled: progress.filledFields?.includes(field.key) ?? false,
     }));
 
+    const activePolicies = await LenderPolicy.find({ status: 'active' }).lean();
     return NextResponse.json({
       _id: String(user._id),
+      loanReadiness: computeLoanReadiness(user.studentProfile),
+      bestLoanMatch: await findBestLoanMatch(user.studentProfile, activePolicies),
       name: user.name || snapshot.studentName || 'Unknown',
       email: user.email,
       image: user.image,

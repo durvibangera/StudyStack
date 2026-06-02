@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const policyContext = activePolicies.length > 0
       ? activePolicies.map((p: any, i: number) => {
           const pol = p.extractedPolicies;
-          return `### Lender ${i + 1}: ${p.lenderName} — ${p.productName}
+          return `### Lender Policy ${i + 1}: ${p.lenderName} — ${p.productName}
 - Interest Rate: ${pol?.financial?.interestRateMin || '?'}% - ${pol?.financial?.interestRateMax || '?'}%
 - Max Loan: ₹${pol?.financial?.maxLoanAmountINR ? (pol.financial.maxLoanAmountINR / 100000).toFixed(0) + 'L' : 'N/A'}
 - Collateral: ${pol?.financial?.collateralRequired ? `Required (above ₹${pol?.financial?.collateralThresholdINR ? (pol.financial.collateralThresholdINR / 100000).toFixed(0) + 'L' : 'threshold'})` : 'Not required'}
@@ -69,18 +69,67 @@ export async function POST(request: Request) {
         }).join('\n\n')
       : 'No lender policies have been uploaded yet. Provide general education loan guidance.';
 
-    // Existing loan app context
-    const loanAppContext = loanApp ? `
-## EXISTING LOAN APPLICATION DATA
-- Eligibility Score: ${(loanApp as any).eligibilityScore || 'Not computed'}
-- Eligibility Band: ${(loanApp as any).eligibilityBand || 'Not computed'}
-- Matched Offers: ${((loanApp as any).matchedOffers || []).length} offers found
-- Top Offer: ${((loanApp as any).matchedOffers || [])[0]?.lender || 'None'}
-- Application Status: ${(loanApp as any).applicationStatus || 'not_started'}
-- Policy Matches: ${((loanApp as any).policyMatchResults || []).length} policy matches
-${((loanApp as any).policyMatchResults || []).map((m: any) => `  - ${m.lenderName}: ${m.matchScore}% match (${m.eligible ? 'Eligible' : m.partiallyEligible ? 'Partial' : 'Not Eligible'})`).join('\n')}
-- Documents Pending: ${((loanApp as any).documentChecklist || []).filter((d: any) => d.status === 'pending').length}
-` : 'No loan application exists yet.';
+    // ── Detail all Analyses Context ──
+
+    // 1. Overview & Offers
+    const offersContext = loanApp?.matchedOffers && loanApp.matchedOffers.length > 0
+      ? loanApp.matchedOffers.map((o: any) => 
+          `- **${o.lender}**: Match Score ${o.matchScore}%, Interest: ${o.interestRateMin}%-${o.interestRateMax}%, Max Amount: ₹${(o.maxLoanAmountINR / 100000).toFixed(0)}L, Collateral Required: ${o.collateralRequired ? 'Yes' : 'No'}, Moratorium: ${o.moratoriumMonths || 0} mos. Match Reason: ${o.matchReason}`
+        ).join('\n')
+      : 'No AI-ranked loan offers generated yet.';
+
+    const policyMatchesContext = loanApp?.policyMatchResults && loanApp.policyMatchResults.length > 0
+      ? loanApp.policyMatchResults.map((pm: any) => {
+          const status = pm.eligible ? 'Eligible' : pm.partiallyEligible ? 'Partially Eligible' : 'Not Eligible';
+          const reasons = pm.reasons.map((r: any) => `  - [${r.met ? '✓' : '✗'}] ${r.detail}`).join('\n');
+          return `- **${pm.lenderName} (${pm.productName})**: Match Score ${pm.matchScore}%, Status: ${status}\n  - Rate: ${pm.interestRateRange}, Max: ₹${(pm.maxLoanAmountINR / 100000).toFixed(0)}L, Collateral Required: ${pm.collateralRequired ? 'Yes' : 'No'}\n${reasons}`;
+        }).join('\n')
+      : 'No policy matches evaluated yet.';
+
+    const kpisContext = loanApp?.kpis ? `
+- Financial Health Score: ${loanApp.kpis.financialHealthScore || 0}/100
+- Affordability Index: ${loanApp.kpis.affordabilityIndex || 0}/100
+- Debt Safety Score: ${loanApp.kpis.debtSafety || 0}/100
+- Debt-to-Income Ratio: ${loanApp.kpis.debtToIncomeRatio || 0}%
+- Estimated Monthly EMI: ₹${loanApp.kpis.estimatedEMI ? Math.round(loanApp.kpis.estimatedEMI).toLocaleString('en-IN') : '0'}
+- Best Interest Rate: ${loanApp.kpis.bestRate || 0}%
+- Total Interest: ${loanApp.kpis.totalInterestPercent || 0}% of principal
+- Loan Amount Configured: ₹${loanApp.kpis.loanAmount ? (loanApp.kpis.loanAmount / 100000).toFixed(0) + 'L' : '0L'}
+` : 'No financial KPIs calculated yet.';
+
+    // 2. AI Analytics & ROI
+    const roi = loanApp?.roiProjection;
+    const roiContext = roi ? `
+- Tuition Cost: ₹${(roi.estimatedTuitionINR / 100000).toFixed(2)}L
+- Living Cost: ₹${(roi.estimatedLivingCostINR / 100000).toFixed(2)}L
+- Total Education Cost: ₹${(roi.totalCostINR / 100000).toFixed(2)}L
+- Expected Salaries: 
+  - Year 1: ₹${(roi.expectedSalaryYear1INR / 100000).toFixed(2)}L/yr (Source: ${roi.salaryNotes || 'Exa AI estimates'})
+  - Year 3: ₹${roi.expectedSalaryYear3INR ? (roi.expectedSalaryYear3INR / 100000).toFixed(2) + 'L/yr' : 'N/A'}
+  - Year 5: ₹${roi.expectedSalaryYear5INR ? (roi.expectedSalaryYear5INR / 100000).toFixed(2) + 'L/yr' : 'N/A'}
+- Payback Period: ${roi.paybackPeriodMonths || 0} months
+- Estimated ROI: ${roi.roiPercentage ? roi.roiPercentage.toFixed(1) + '%' : 'N/A'}
+` : 'No ROI projection available.';
+
+    const forumContext = loanApp?.forumInsights && loanApp.forumInsights.length > 0
+      ? loanApp.forumInsights.map((fi: any) => 
+          `- [${fi.platform || 'Forum'}] ${fi.title}: ${fi.keyTakeaway} (Sentiment: ${fi.sentiment || 'Neutral'})`
+        ).join('\n')
+      : 'No community forum insights available.';
+
+    // 3. Documents
+    const docChecklistContext = loanApp?.documentChecklist && loanApp.documentChecklist.length > 0
+      ? loanApp.documentChecklist.map((d: any) => 
+          `- **${d.name}**: Status = ${d.status.toUpperCase()} (Required: ${d.required ? 'Yes' : 'No'}, Relevant Lenders: ${d.lenders?.join(', ') || 'All'})`
+        ).join('\n')
+      : 'No document checklist generated yet.';
+
+    // 4. Settings & Overrides
+    const settingsContext = loanApp?.searchParams ? Object.entries(loanApp.searchParams)
+      .filter(([_, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))
+      .map(([k, v]) => `- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+      .join('\n')
+      : 'No specific settings/overrides configured.';
 
     // Build conversation history for context
     const historyText = conversationHistory
@@ -92,32 +141,55 @@ ${((loanApp as any).policyMatchResults || []).map((m: any) => `  - ${m.lenderNam
     const systemPrompt = `You are Aria, an intelligent and empathetic AI education financing assistant at StudyStack. You help students discover, evaluate, and apply for education loans.
 
 ## YOUR CAPABILITIES
-1. **Profile Building**: Naturally ask follow-up questions to understand the student's financial and academic profile. Don't interrogate — be conversational.
-2. **Eligibility Evaluation**: Based on the lender policies below, tell students which loans they qualify for and why.
-3. **Personalized Recommendations**: Recommend the best financing options with clear reasoning.
-4. **Financial Planning**: Help with EMI calculations, repayment planning, and affordability assessment.
-5. **Document Guidance**: Tell students exactly what documents they need based on their chosen lender.
-6. **Policy Answers**: Answer specific questions about lender rules using the policies below.
+1. **Profile Building & Brainstorming**: Naturally ask questions and help the student brainstorm the best financing strategy (secured vs unsecured, co-applicant strategy, repayment terms).
+2. **Tab & Analysis Awareness**: You have the complete context of the user's dashboard analyses:
+   - **Overview & Offers**: Financial health KPIs, AI-ranked offers, and policy-based evaluations.
+   - **AI Analytics & ROI**: Tuition/living cost breakdown, expected salaries, payback period, and community insights.
+   - **Offer Comparison**: Detailed comparison parameters (rates, collateral, moratoriums, pros & cons).
+   - **Documents Checklist**: Checklist of documents and their validation status.
+   - **Settings & Overrides**: The inputs/overrides currently configured by the student.
+3. **Personalized Recommendations (Prioritize Counsellor Uploads)**: Recommend the best financing options. IMPORTANT: You MUST prioritize and rank the counsellor-uploaded lender policies (found in section "OFFICIAL COUNSELLOR-UPLOADED LENDER POLICIES (HIGH PRIORITY)") higher than the general web-scraped AI-ranked offers. Curate your recommendations so that eligible/partially-eligible counsellor-uploaded policies are presented first as the premium, official options.
+4. **Optimization Tips**: Explain how changing settings (e.g. adding collateral, choosing a different country, or increasing co-applicant income) might unlock better interest rates or eligible policies.
 
-## STUDENT PROFILE
-${profileSummary || 'Profile is incomplete. Ask the student for basic information.'}
+## LIVE ANALYSIS & DASHBOARD CONTEXT
 
-## AVAILABLE LENDER POLICIES
+### 1. SETTINGS & INPUTS (Settings & Overrides)
+${settingsContext}
+
+### 2. STUDENT DEFAULT PROFILE
+${profileSummary || 'Profile is incomplete.'}
+
+### 3. FINANCIAL HEALTH & KPIS (Overview & Offers)
+${kpisContext}
+
+### 4. OFFICIAL COUNSELLOR-UPLOADED LENDER POLICIES (HIGH PRIORITY)
+${policyMatchesContext}
+
+### 5. GENERAL AI-RANKED LOAN OFFERS
+${offersContext}
+
+### 6. RETURN ON INVESTMENT & SALARY PROJECTIONS (AI Analytics & ROI)
+${roiContext}
+
+### 7. COMMUNITY FORUM DISCUSSION (AI Analytics & ROI)
+${forumContext}
+
+### 8. DOCUMENT CHECKLIST STATUS (Documents)
+${docChecklistContext}
+
+### 9. SYSTEM-WIDE OFFICIAL LENDER POLICY REFERENCE RULES (HIGH PRIORITY)
 ${policyContext}
-
-${loanAppContext}
 
 ## RESPONSE RULES
 - Be warm, professional, and encouraging. Students are often anxious about financing.
-- Reference specific lender policies when answering. Don't make up rules.
+- ALWAYS rank and recommend the counsellor-uploaded lender policies (from the "OFFICIAL COUNSELLOR-UPLOADED LENDER POLICIES" section) higher and suggest them first to the student. State clearly that these policies are official programs uploaded directly by their counsellor.
+- Refer to the live analysis details above to answer. Don't make up loan rates or salary numbers.
 - If the student's profile is incomplete, ask ONE follow-up question at a time.
 - Use ₹ for Indian currency. Format large amounts as lakhs/crores.
-- When evaluating eligibility, be transparent about which criteria are met and which aren't.
-- If multiple loans are suitable, compare them briefly highlighting trade-offs.
-- For EMI calculations: use the formula EMI = P × r × (1+r)^n / ((1+r)^n - 1) where r = monthly rate.
-- Keep responses concise but informative. Use bullet points and formatting.
-- NEVER fabricate lender information. If a policy doesn't cover something, say so.
-- If no policies are uploaded, provide general education loan guidance and suggest the student ask their counsellor to upload lender policies.
+- Address questions like "What are my best options?", "Am I eligible for X lender?", "What documents do I need to submit next?", or "Is this course worth the ROI?" using the exact figures from their dashboard.
+- For EMI brainstorming, use the values configured in the settings or explain how changing tenure/rate changes the EMI.
+- Keep responses concise but highly informative. Use bullet points and formatting.
+- If no analysis is available yet, suggest the student trigger one on the dashboard.
 
 ## SPECIAL ACTIONS
 If your response naturally leads to one of these actions, include it in a JSON block at the END of your response (after all text):
@@ -237,6 +309,33 @@ export async function GET() {
     console.error('[loan-chat GET] Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch chat history', details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ *  DELETE /api/loan/chat — Clear chat history
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+export async function DELETE() {
+  try {
+    const session: any = await getServerSession(authOptions as any);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+    await LoanApplication.findOneAndUpdate(
+      { userId: session.user.id },
+      { $set: { chatHistory: [] } }
+    );
+
+    return NextResponse.json({ success: true, message: 'Chat history cleared' });
+  } catch (error) {
+    console.error('[loan-chat DELETE] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to clear chat history', details: (error as Error).message },
       { status: 500 }
     );
   }

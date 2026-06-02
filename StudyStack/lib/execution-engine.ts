@@ -262,20 +262,16 @@ Output ONLY the tweet text, nothing else.\n`;
       break;
     
     case 'email':
-      prompt += `You are an expert education marketing copywriter for StudyStack, a leading overseas education consultancy with 45,000+ successful placements. Your task is to write a STUDENT-FACING outreach email based on the campaign context above.
+      prompt += `You are an expert education marketing copywriter for StudyStack, a leading overseas education consultancy with 45,000+ successful placements. Your task is to write a premium, high-converting outreach email based on the campaign context.
 
 ⚠️ CRITICAL INSTRUCTION ⚠️
 The campaign brief and strategy above are YOUR INSTRUCTIONS - they describe what to write about.
 DO NOT copy the brief text into the email. DO NOT quote the brief.
-INSTEAD: Transform those instructions into persuasive, empathetic outreach copy that speaks directly to students and parents.
+Transform those instructions into persuasive, empathetic outreach copy that speaks directly to students and parents.
 
 Think of it this way:
 - Campaign Brief = Your assignment (what to create)
 - Email Content = What you deliver to students (the actual outreach message)
-
-EXAMPLE:
-❌ WRONG: "Create a campaign to recruit students for UK universities..."
-✅ RIGHT: "Your dream of studying at a top UK university is closer than you think..."
 
 ⚠️ PERSONALIZATION PLACEHOLDERS ⚠️
 - Use ONLY {{name}} for recipient name personalization
@@ -288,8 +284,8 @@ EXAMPLE:
 REQUIRED JSON OUTPUT (use ONLY this exact structure):
 {
   "subject": "Compelling subject line here",
-  "html": "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'><h1 style='color: #333333; font-size: 24px; margin-bottom: 20px;'>Hello {{name}},</h1><p style='color: #666666; font-size: 16px; line-height: 1.6; margin-bottom: 15px;'>First paragraph - hook the reader...</p><p style='color: #666666; font-size: 16px; line-height: 1.6; margin-bottom: 15px;'>Second paragraph - present solution and benefits...</p><div style='margin: 30px 0; text-align: center;'><a href='#' style='background-color: #0066cc; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Book Free Counselling</a></div><p style='color: #666666; font-size: 14px; margin-top: 30px;'>Best regards,<br>Team StudyStack</p></div>",
-  "text": "Hello {{name}},\\n\\nFirst paragraph...\\n\\nSecond paragraph...\\n\\nBook Free Counselling: [link]\\n\\nBest regards,\\nTeam StudyStack"
+  "html": "<div style='background-color: #f8fafc; padding: 40px 10px; font-family: Inter, system-ui, sans-serif;'><div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;'><div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; text-align: center; border-bottom: 3px solid #eab308;'><span style='color: #ffffff; font-size: 26px; font-weight: 900; letter-spacing: -0.02em;'>Study<span style='color: #eab308;'>Stack</span></span></div><div style='padding: 40px 30px;'><h2 style='color: #0f172a; font-size: 20px; font-weight: 800; margin-top: 0; margin-bottom: 20px; letter-spacing: -0.01em;'>Hello {{name}},</h2><p style='color: #334155; font-size: 15px; line-height: 1.7; margin-bottom: 20px;'>[compelling introductory paragraph...]</p><p style='color: #334155; font-size: 15px; line-height: 1.7; margin-bottom: 20px;'>[detailed benefit or context paragraph...]</p><div style='background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 30px;'><h4 style='color: #0f172a; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 12px;'>Why Students Choose StudyStack:</h4><div style='color: #475569; font-size: 14px; line-height: 1.6;'>• **45,000+ Placements** across top UK & Russell Group universities<br>• **Scholarship Assistance** to lower your education costs<br>• **End-to-End Support** including IELTS/PTE training and visa guidance</div></div><div style='text-align: center; margin: 35px 0;'><a href='#' style='background-color: #10b981; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px rgba(16,185,129,0.2);'>[compelling CTA button text]</a></div><p style='color: #334155; font-size: 15px; line-height: 1.7; margin-bottom: 0;'>Best regards,<br><strong>Team StudyStack</strong></p></div><div style='background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;'><p style='margin: 0 0 8px 0;'>StudyStack Overseas Education · 120+ Partner Universities</p><p style='margin: 0;'>You received this email because you registered interest in studying abroad. <a href='#' style='color: #10b981; text-decoration: none;'>Unsubscribe</a></p></div></div></div>",
+  "text": "Hello {{name}},\n\n[Introductory paragraph...]\n\n[Benefit or context paragraph...]\n\nWhy Students Choose StudyStack:\n- 45,000+ Placements across top UK & Russell Group universities\n- Scholarship Assistance to lower your education costs\n- End-to-End Support including IELTS/PTE training and visa guidance\n\n[CTA button text]: [link]\n\nBest regards,\nTeam StudyStack"
 }
 
 EMAIL WRITING RULES:
@@ -300,43 +296,28 @@ EMAIL WRITING RULES:
 2. Opening Hook (1 paragraph): Start with a relatable aspiration or concern
    - Address the student's dream of studying abroad or common worries (cost, eligibility, IELTS)
    - Make it personal and relevant to their academic stage
-   - Example: "Dreaming of studying at a world-class university in the UK? You're not alone — and we're here to make it happen."
+   - Replace the introductory paragraph bracket placeholder with the actual Hook copy.
 
 3. Solution & Benefits (1-2 paragraphs):
    - Present StudyStack's services as the answer
    - Highlight 2-3 key benefits (45,000+ placements, 120+ partner universities, scholarship guidance, visa support)
-   - Use concrete details, not abstract descriptions
    - Focus on what THEY gain: career prospects, global exposure, expert guidance
-   - All details must be COMPLETE - no bracketed placeholders
+   - Replace the detailed benefit bracket placeholder with the actual Solution copy.
 
 4. Call-to-Action:
-   - Clear, action-oriented button text
-   - Examples: "Book Free Counselling", "Check Your Eligibility", "Start Your Application", "Get Scholarship Info", "Talk to a Counsellor"
-   - NOT generic: "Learn More", "Click Here"
-   - Use action words related to the student's journey
+   - Clear, action-oriented button text (e.g., "Book Free Strategy Session", "Check My Scholarship Eligibility").
+   - Replace the button text placeholder with this copy.
 
 5. Closing Signature:
-   - Use "Best regards," or "Warm regards,"
-   - Follow with "Team StudyStack" or "Your Counselling Team at StudyStack"
-   - DO NOT use placeholders like [Your Company Name] or [Team Name]
+   - Keep "Best regards," followed by "Team StudyStack".
 
 6. Tone & Voice:
-   - Write as if speaking directly to ONE student
-   - Use "you" and "your" language
-   - Be warm, encouraging, and professional — like a supportive mentor
-   - Avoid being salesy; focus on empowerment and opportunity
+   - Write as if speaking directly to ONE student (supportive, warm, encouraging mentor).
 
 7. HTML Format Requirements:
-   - Use single quotes (') for all HTML attributes
-   - No escaped characters
-   - Include {{name}} placeholder ONLY for recipient name personalization
-   - Mobile-responsive (max-width: 600px)
-
-8. Plain Text Version:
-   - Mirror HTML content without tags
-   - Use \\n for line breaks (double backslash in JSON)
-   - Keep it readable and well-structured
-   - Replace button with "Action: [link]" format
+   - Use single quotes (') for all HTML attributes.
+   - Do not output any markdown formatting inside the JSON strings except newlines in text.
+   - You MUST fully substitute the introductory, benefit, and CTA button text placeholders in the JSON templates. The final JSON payload must be completely ready for email sending, containing zero brackets/placeholders except {{name}}.
 
 NOW: Create the student-facing email with NO PLACEHOLDERS except {{name}}. Every sentence must be complete and ready to send.\n`;
       break;

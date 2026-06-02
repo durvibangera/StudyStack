@@ -168,8 +168,9 @@ Use realistic numbers based on the search data. Convert foreign currencies to IN
 function parseBudgetToINR(budget: string): number {
   if (!budget) return 0;
   const lower = budget.toLowerCase().replace(/[₹,]/g, '');
-  const num = parseFloat(lower.replace(/[^\d.]/g, ''));
-  if (isNaN(num)) return 0;
+  const match = lower.match(/\d+(?:\.\d+)?/);
+  if (!match) return 0;
+  const num = parseFloat(match[0]);
   if (lower.includes('crore') || lower.includes('cr')) return num * 10000000;
   if (lower.includes('lakh') || lower.includes('lac') || lower.includes('l')) return num * 100000;
   if (num > 10000) return num;

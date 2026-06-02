@@ -8,9 +8,7 @@ import ApplicationStatusTracker from './components/ApplicationStatusTracker';
 import LoanSettings from './components/LoanSettings';
 import OfferComparison from './components/OfferComparison';
 import AnalyticsTab from './components/AnalyticsTab';
-import dynamic from 'next/dynamic';
-
-const AnamVoiceAgent = dynamic(() => import('@/components/AnamVoiceAgent'), { ssr: false });
+import LoanChatAssistant from './components/LoanChatAssistant';
 
 /* ── Speedometer Gauge ──────────────────────────────────────────────────────── */
 function SpeedometerGauge({ value, max = 100, label, sublabel, size = 160 }: {
@@ -522,7 +520,7 @@ export default function LoanPage() {
             {/* AI Assistant Tab */}
             {activeTab === 'assistant' && (
               <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden" style={{ height: '70vh' }}>
-                <AnamVoiceAgent mode="buddy" onComplete={() => setActiveTab('dashboard')} />
+                <LoanChatAssistant onNavigate={(tab) => setActiveTab(tab)} />
               </div>
             )}
 
